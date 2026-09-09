@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vadhvan Port Management — ER Diagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* ---- NAVBAR ---- */
+        .navbar {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-left { display: flex; align-items: center; gap: 14px; }
+        .navbar-icon {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+        }
+        .navbar-icon svg { width: 24px; height: 24px; color: white; }
+        .navbar-title { font-size: 22px; font-weight: 700; color: #0f172a; }
+        .navbar-subtitle { font-size: 11px; font-weight: 600; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+        .navbar-right { display: flex; gap: 10px; align-items: center; }
+        .badge {
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid;
+        }
+        .badge-schema { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+        .badge-live { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .badge-live::before {
+            content: '';
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            margin-right: 6px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        
+        /* ---- WORKSPACE ---- */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* ---- SIDEBAR ---- */
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            padding: 28px 24px;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.03);
+            flex-shrink: 0;
+        }
+        .sidebar h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #f1f5f9;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        .legend-item:hover { background: #f8fafc; }
+        .legend-shape {
+            width: 36px; height: 24px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .legend-shape.entity { background: #fff; border: 2.5px solid #1e3a5f; }
+        .legend-shape.relation {
+            background: #fffbeb; border: 2.5px solid #b45309;
+            transform: rotate(45deg); width: 22px; height: 22px;
+            margin: 0 7px;
+        }
+        .legend-shape.attribute { background: #f8fafc; border: 1.5px solid #64748b; border-radius: 50%; width: 28px; height: 20px; }
+        .legend-label { font-size: 14px; font-weight: 600; color: #334155; }
+        .legend-desc { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        
+        .instructions {
+            margin-top: 28px;
+        }
+        .instructions li {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            line-height: 1.5;
+        }
+        .instructions li strong { color: #334155; }
+        
+        /* ---- CANVAS ---- */
+        .canvas-area {
+            flex: 1;
+            overflow: auto;
+            background: #eef4fb;
+            background-image: radial-gradient(#c8d7e8 1.5px, transparent 1.5px);
+            background-size: 32px 32px;
+            position: relative;
+            cursor: grab;
+        }
+        .canvas-area:active { cursor: grabbing; }
+        .canvas-area svg {
+            display: block;
+            min-width: 7200px;
+            min-height: 4800px;
+        }
+        
+        /* ---- ZOOM TOOLBAR ---- */
+        .toolbar {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 50;
+        }
+        .toolbar button {
+            width: 44px; height: 44px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            transition: all 0.15s;
+        }
+        .toolbar button:hover { background: #eff6ff; color: #2563eb; }
+        .toolbar .divider { width: 28px; height: 1px; background: #e2e8f0; margin: 0 auto; }
+        
+        /* ---- SVG HOVER EFFECTS ---- */
+        .entity rect:hover { filter: url(#shadow-lg); stroke: #2563eb; }
+        .relation polygon:hover { filter: url(#shadow-lg); stroke: #92400e; }
+        
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <div class="navbar-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            </div>
+            <div>
+                <div class="navbar-title">Vadhvan Port Management</div>
+                <div class="navbar-subtitle">Entity Relationship Diagram &mdash; Chen Notation</div>
+            </div>
+        </div>
+        <div class="navbar-right">
+            <span class="badge badge-schema">Production Schema</span>
+            <span class="badge badge-live">Live</span>
+        </div>
+    </nav>
+    
+    <!-- WORKSPACE -->
+    <div class="workspace">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <h3>Legend</h3>
+            <div class="legend-item">
+                <div class="legend-shape entity"></div>
+                <div><div class="legend-label">Entity</div><div class="legend-desc">Core database tables</div></div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-shape relation"></div>
+                <div><div class="legend-label">Relationship</div><div class="legend-desc">Foreign key connections</div></div>
+            </div>
+            <div class="legend-item">
+                <div class="legend-shape attribute"></div>
+                <div><div class="legend-label">Attribute</div><div class="legend-desc">Table columns / fields</div></div>
+            </div>
+            
+            <div class="instructions">
+                <h3>How to Navigate</h3>
+                <ul>
+                    <li><strong>Scroll</strong> &mdash; Pan around the diagram by scrolling horizontally &amp; vertically.</li>
+                    <li><strong>Zoom</strong> &mdash; Use Ctrl+Scroll or the toolbar buttons to zoom in/out.</li>
+                    <li><strong>Cardinalities</strong> &mdash; Blue labels on lines show 1, 0..1, 0..N relationships.</li>
+                </ul>
+            </div>
+        </aside>
+        
+        <!-- CANVAS -->
+        <div class="canvas-area" id="canvas">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7200 4800" width="7200" height="4800">
+                <!-- Filters -->
+                <defs>
+                    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+                        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+                    </filter>
+                    <filter id="shadow-sm" x="-10%" y="-10%" width="130%" height="140%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.06"/>
+                    </filter>
+                    <filter id="shadow-lg" x="-10%" y="-10%" width="130%" height="140%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
+                    </filter>
+                </defs>
+                
+                <!-- Title -->
+                <text x="3600" y="100" text-anchor="middle" font-size="42" font-weight="700"
+                      fill="#0f172a" font-family="Inter, Arial, sans-serif">
+                    Vadhvan Port Management — ER Diagram (Chen Notation)
+                </text>
+                <line x1="3100" y1="130" x2="4100" y2="130" stroke="#cbd5e1" stroke-width="2"/>
+                
+                <!-- Lines (drawn first, behind everything) -->
+                <line x1="600" y1="400" x2="320" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="400" x2="500" y2="250" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="400" x2="700" y2="250" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="400" x2="370" y2="520" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="400" x2="830" y2="290" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="400" x2="550" y2="540" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="400" x2="1740" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="400" x2="1900" y2="250" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="400" x2="2060" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="700" y1="400" x2="1160" y2="400" stroke="#475569" stroke-width="2.5"/>
+<rect x="770.0" y="386.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="792.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<rect x="1040.0" y="386.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1068.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="1340" y1="400" x2="1770" y2="400" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="400" x2="3030" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="400" x2="3210" y2="250" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="400" x2="3390" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="400" x2="4320" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="400" x2="4660" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="3280" y1="400" x2="3785" y2="400" stroke="#475569" stroke-width="2.5"/>
+<rect x="3359.0" y="386.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3381.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<rect x="3656.0" y="386.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3684.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="3915" y1="400" x2="4400" y2="400" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="400" x2="5660" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="400" x2="5940" y2="270" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="400" x2="5800" y2="240" stroke="#475569" stroke-width="2.5"/>
+<line x1="4600" y1="400" x2="5085" y2="400" stroke="#475569" stroke-width="2.5"/>
+<rect x="4675.0" y="386.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4697.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<rect x="4960.0" y="386.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4988.0" y="405.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="5215" y1="400" x2="5640" y2="400" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="1300" x2="1740" y2="1180" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="1300" x2="2060" y2="1180" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="432" x2="860" y2="804" stroke="#475569" stroke-width="2.5"/>
+<rect x="630.0" y="492.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="652.0" y="511.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="860" y1="896" x2="1900" y2="1268" stroke="#475569" stroke-width="2.5"/>
+<rect x="1664.0" y="1179.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1692.0" y="1198.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="600" y1="432" x2="600" y2="804" stroke="#475569" stroke-width="2.5"/>
+<rect x="578.0" y="492.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="600.0" y="511.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="600" y1="1300" x2="370" y2="1190" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="1300" x2="370" y2="1410" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="1300" x2="830" y2="1410" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="1300" x2="830" y2="1190" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="896" x2="600" y2="1268" stroke="#475569" stroke-width="2.5"/>
+<rect x="572.0" y="1179.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="600.0" y="1198.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="3200" y1="1300" x2="3020" y2="1180" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="1300" x2="3210" y2="1150" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="1300" x2="3400" y2="1180" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="432" x2="3200" y2="804" stroke="#475569" stroke-width="2.5"/>
+<rect x="3178.0" y="492.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="511.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="3200" y1="896" x2="3200" y2="1268" stroke="#475569" stroke-width="2.5"/>
+<rect x="3172.0" y="1179.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="1198.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="4500" y1="432" x2="3850" y2="804" stroke="#475569" stroke-width="2.5"/>
+<rect x="4348.0" y="492.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4370.0" y="511.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="3850" y1="896" x2="3300" y2="1300" stroke="#475569" stroke-width="2.5"/>
+<rect x="3382.0" y="1205.2" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3410.0" y="1224.2" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="700" y1="1300" x2="2470" y2="800" stroke="#475569" stroke-width="2.5"/>
+<rect x="1032.0" y="1186.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1054.0" y="1205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="2630" y1="800" x2="4500" y2="432" stroke="#475569" stroke-width="2.5"/>
+<rect x="4098.0" y="491.59999999999997" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4126.0" y="510.59999999999997" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="4500" y1="1300" x2="4730" y2="1190" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="1300" x2="4730" y2="1410" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="1300" x2="4270" y2="1410" stroke="#475569" stroke-width="2.5"/>
+<line x1="3280" y1="1300" x2="3765" y2="1300" stroke="#475569" stroke-width="2.5"/>
+<rect x="3355.0" y="1286.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3377.0" y="1305.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="3640.0" y="1286.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3668.0" y="1305.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="3935" y1="1300" x2="4400" y2="1300" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="1300" x2="5660" y2="1170" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="1300" x2="5800" y2="1140" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="1300" x2="5940" y2="1170" stroke="#475569" stroke-width="2.5"/>
+<line x1="4600" y1="1300" x2="5070" y2="1300" stroke="#475569" stroke-width="2.5"/>
+<rect x="4672.0" y="1286.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4694.0" y="1305.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<rect x="4948.0" y="1286.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4976.0" y="1305.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="5230" y1="1300" x2="5720" y2="1300" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="2200" x2="400" y2="2090" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="2200" x2="800" y2="2090" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="2200" x2="1900" y2="2060" stroke="#475569" stroke-width="2.5"/>
+<line x1="700" y1="2200" x2="1170" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<rect x="772.0" y="2186.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="794.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="1048.0" y="2186.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1076.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="1330" y1="2200" x2="1800" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="1532" x2="1900" y2="1704" stroke="#475569" stroke-width="2.5"/>
+<rect x="1878.0" y="1552.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1900.0" y="1571.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="3200" y1="2200" x2="3200" y2="2060" stroke="#475569" stroke-width="2.5"/>
+<line x1="2000" y1="2200" x2="2470" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<rect x="2072.0" y="2186.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="2094.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="2348.0" y="2186.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="2376.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="2630" y1="2200" x2="3050" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="1332" x2="3200" y2="1704" stroke="#475569" stroke-width="2.5"/>
+<rect x="3178.0" y="1392.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="1411.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="3200" y1="1796" x2="3200" y2="2168" stroke="#475569" stroke-width="2.5"/>
+<rect x="3172.0" y="2079.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="2098.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="4500" y1="2200" x2="4700" y2="2090" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="1332" x2="4500" y2="1704" stroke="#475569" stroke-width="2.5"/>
+<rect x="4478.0" y="1392.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4500.0" y="1411.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="4500" y1="1796" x2="4500" y2="2168" stroke="#475569" stroke-width="2.5"/>
+<rect x="4472.0" y="2079.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4500.0" y="2098.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="5800" y1="2200" x2="5800" y2="2040" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="2200" x2="6010" y2="2090" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="2200" x2="6010" y2="2310" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="2200" x2="5800" y2="2350" stroke="#475569" stroke-width="2.5"/>
+<line x1="4580" y1="2200" x2="5065" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<rect x="4655.0" y="2186.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4677.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<rect x="4940.0" y="2186.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4968.0" y="2205.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="5235" y1="2200" x2="5700" y2="2200" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="3100" x2="400" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="600" y1="3100" x2="800" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="700" y1="3100" x2="1165" y2="3100" stroke="#475569" stroke-width="2.5"/>
+<rect x="771.0" y="3086.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="793.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="1044.0" y="3086.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1072.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="1335" y1="3100" x2="1780" y2="3100" stroke="#475569" stroke-width="2.5"/>
+<line x1="1900" y1="2232" x2="1900" y2="2604" stroke="#475569" stroke-width="2.5"/>
+<rect x="1878.0" y="2292.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1900.0" y="2311.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="1900" y1="2696" x2="1900" y2="3068" stroke="#475569" stroke-width="2.5"/>
+<rect x="1872.0" y="2979.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="1900.0" y="2998.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="3200" y1="3100" x2="3030" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="3100" x2="3370" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="3200" y1="2232" x2="3200" y2="2604" stroke="#475569" stroke-width="2.5"/>
+<rect x="3178.0" y="2292.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="2311.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="3200" y1="2696" x2="3200" y2="3068" stroke="#475569" stroke-width="2.5"/>
+<rect x="3172.0" y="2979.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3200.0" y="2998.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="4500" y1="3100" x2="4330" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="3100" x2="4670" y2="3220" stroke="#475569" stroke-width="2.5"/>
+<line x1="3290" y1="3100" x2="3780" y2="3100" stroke="#475569" stroke-width="2.5"/>
+<rect x="3366.0" y="3086.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3388.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="3654.0" y="3086.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="3682.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="3920" y1="3100" x2="4400" y2="3100" stroke="#475569" stroke-width="2.5"/>
+<line x1="4500" y1="2232" x2="4500" y2="2604" stroke="#475569" stroke-width="2.5"/>
+<rect x="4478.0" y="2292.4" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4500.0" y="2311.4" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">1</text>
+<line x1="4500" y1="2696" x2="4500" y2="3068" stroke="#475569" stroke-width="2.5"/>
+<rect x="4472.0" y="2979.6" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4500.0" y="2998.6" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<line x1="5800" y1="3100" x2="5800" y2="2960" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="3100" x2="6000" y2="3210" stroke="#475569" stroke-width="2.5"/>
+<line x1="5800" y1="3100" x2="5800" y2="3250" stroke="#475569" stroke-width="2.5"/>
+<line x1="4600" y1="3100" x2="5075" y2="3100" stroke="#475569" stroke-width="2.5"/>
+<rect x="4673.0" y="3086.0" width="44" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4695.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..N</text>
+<rect x="4952.0" y="3086.0" width="56" height="26" rx="5" fill="#ffffff" stroke="#475569" stroke-width="0.5"/>
+        <text x="4980.0" y="3105.0" text-anchor="middle" font-size="17" font-weight="700" fill="#1e40af" font-family="Inter, Arial, sans-serif">0..1</text>
+<line x1="5225" y1="3100" x2="5710" y2="3100" stroke="#475569" stroke-width="2.5"/>
+                
+                <!-- Entities, Attributes, Relations -->
+                
+    <g class="entity" data-id="user_t">
+      <rect x="490" y="368" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="600" y="408" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[User]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="320" cy="270" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="320" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">id</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="500" cy="250" rx="78" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="500" y="257" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">email</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="700" cy="250" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="700" y="257" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">name</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="370" cy="520" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="370" y="527" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">role</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="830" cy="290" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="830" y="297" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">fnme</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="550" cy="540" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="550" y="547" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">status</text>
+    </g>
+
+    <g class="entity" data-id="notification">
+      <rect x="1750" y="368" width="300" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="1900" y="408" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Notification]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="1740" cy="270" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="1740" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">id</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="1900" cy="250" rx="78" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="1900" y="257" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">title</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="2060" cy="270" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="2060" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">read</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="1250,354 1352,400 1250,446 1148,400"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="1250" y="407" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{receives}</text>
+    </g>
+
+    <g class="entity" data-id="driver">
+      <rect x="3090" y="368" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="3200" y="408" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Driver]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3030" cy="270" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3030" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">entityId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3210" cy="250" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3210" y="257" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">driverId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3390" cy="270" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3390" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">licenseNo</text>
+    </g>
+
+    <g class="entity" data-id="vehicle">
+      <rect x="4390" y="368" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="4500" y="408" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Vehicle]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4320" cy="270" rx="168" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4320" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">registrationNo</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4660" cy="270" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4660" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">driverId</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3850,354 3930,400 3850,446 3770,400"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3850" y="407" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{has}</text>
+    </g>
+
+    <g class="entity" data-id="maint">
+      <rect x="5620" y="368" width="360" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="5800" y="408" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[MaintenanceLogs]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5660" cy="270" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5660" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">totalCost</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5940" cy="270" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5940" y="277" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">amount</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="240" rx="98" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="247" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">amounst</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="5150,354 5230,400 5150,446 5070,400"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="5150" y="407" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{has}</text>
+    </g>
+
+    <g class="entity" data-id="actlog">
+      <rect x="1760" y="1268" width="280" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="1900" y="1308" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[ActivityLog]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="1740" cy="1180" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="1740" y="1187" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">module</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="2060" cy="1180" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="2060" y="1187" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">read</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="860,804 971,850 860,896 749,850"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="860" y="857" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{generates}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="600,804 693,850 600,896 507,850"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="600" y="857" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{creates}</text>
+    </g>
+
+    <g class="entity" data-id="user_b">
+      <rect x="490" y="1268" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="600" y="1308" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[User]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="370" cy="1190" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="370" y="1197" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">userId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="370" cy="1410" rx="75" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="370" y="1417" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">type</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="830" cy="1410" rx="78" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="830" y="1417" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">title</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="830" cy="1190" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="830" y="1197" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">module</text>
+    </g>
+
+    <g class="entity" data-id="trip">
+      <rect x="3090" y="1268" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="3200" y="1308" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Trip]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3020" cy="1180" rx="128" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3020" y="1187" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">tripNumber</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3210" cy="1150" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3210" y="1157" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">driverId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3400" cy="1180" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3400" y="1187" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">source</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3200,804 3284,850 3200,896 3116,850"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3200" y="857" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{drives}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3850,804 3930,850 3850,896 3770,850"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3850" y="857" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{uses}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="2550,754 2634,800 2550,846 2466,800"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="2550" y="807" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{drives}</text>
+    </g>
+
+    <g class="entity" data-id="cont_m">
+      <rect x="4380" y="1268" width="240" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="4500" y="1308" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Container]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4730" cy="1190" rx="168" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4730" y="1197" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">quantityLitres</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4730" cy="1410" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4730" y="1417" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">weight</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4270" cy="1410" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4270" y="1417" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">source</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3850,1254 3970,1300 3850,1346 3730,1300"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3850" y="1307" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{transports}</text>
+    </g>
+
+    <g class="entity" data-id="ship">
+      <rect x="5690" y="1268" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="5800" y="1308" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Ship]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5660" cy="1170" rx="138" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5660" y="1177" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">containerId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="1140" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="1147" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">imoNumber</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5940" cy="1170" rx="168" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5940" y="1177" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">assignedShipId</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="5150,1254 5252,1300 5150,1346 5048,1300"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="5150" y="1307" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{requires}</text>
+    </g>
+
+    <g class="entity" data-id="exp_t">
+      <rect x="490" y="2168" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="600" y="2208" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Expense]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="400" cy="2090" rx="138" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="400" y="2097" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">equipmentId</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="800" cy="2090" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="800" y="2097" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">totalCost</text>
+    </g>
+
+    <g class="entity" data-id="cont_b">
+      <rect x="1780" y="2168" width="240" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="1900" y="2208" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Container]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="1900" cy="2060" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="1900" y="2067" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">weight</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="1250,2154 1352,2200 1250,2246 1148,2200"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="1250" y="2207" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{requires}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="1900,1704 2020,1750 1900,1796 1780,1750"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="1900" y="1757" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{tracked in}</text>
+    </g>
+
+    <g class="entity" data-id="contreq">
+      <rect x="3010" y="2168" width="380" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="3200" y="2208" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[ContainerRequest]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3200" cy="2060" rx="138" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3200" y="2067" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">requestedBy</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="2550,2154 2652,2200 2550,2246 2448,2200"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="2550" y="2207" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{requires}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3200,1704 3320,1750 3200,1796 3080,1750"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3200" y="1757" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{transports}</text>
+    </g>
+
+    <g class="entity" data-id="dock">
+      <rect x="4390" y="2168" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="4500" y="2208" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Dock]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4700" cy="2090" rx="128" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4700" y="2097" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">dockNumber</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="4500,1704 4602,1750 4500,1796 4398,1750"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="4500" y="1757" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{docks at}</text>
+    </g>
+
+    <g class="entity" data-id="warehouse">
+      <rect x="5680" y="2168" width="240" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="5800" y="2208" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Warehouse]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="2040" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="2047" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">capacity</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="6010" cy="2090" rx="168" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="6010" y="2097" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">availableSpace</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="6010" cy="2310" rx="178" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="6010" y="2317" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">equipmentNumber</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="2350" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="2357" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">latitude</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="5150,2154 5270,2200 5150,2246 5030,2200"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="5150" y="2207" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{located in}</text>
+    </g>
+
+    <g class="entity" data-id="exp_b">
+      <rect x="490" y="3068" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="600" y="3108" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Expense]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="400" cy="3220" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="400" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">totalCost</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="800" cy="3220" rx="88" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="800" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">amount</text>
+    </g>
+
+    <g class="entity" data-id="equipid">
+      <rect x="1760" y="3068" width="280" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="1900" y="3108" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[EquipmentId]</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="1250,3054 1370,3100 1250,3146 1130,3100"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="1250" y="3107" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{tracked in}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="1900,2604 1980,2650 1900,2696 1820,2650"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="1900" y="2657" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{uses}</text>
+    </g>
+
+    <g class="entity" data-id="gpslog">
+      <rect x="3090" y="3068" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="3200" y="3108" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[GpsLog]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3030" cy="3220" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3030" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">latitude</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="3370" cy="3220" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="3370" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">longitude</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3200,2604 3311,2650 3200,2696 3089,2650"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3200" y="2657" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{loaded on}</text>
+    </g>
+
+    <g class="entity" data-id="railtrack">
+      <rect x="4380" y="3068" width="240" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="4500" y="3108" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[RailTrack]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4330" cy="3220" rx="78" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4330" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">speed</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="4670" cy="3220" rx="118" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="4670" y="3227" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">timestamp</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="3850,3054 3934,3100 3850,3146 3766,3100"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="3850" y="3107" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{incurs}</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="4500,2604 4620,2650 4500,2696 4380,2650"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="4500" y="2657" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{located in}</text>
+    </g>
+
+    <g class="entity" data-id="settings">
+      <rect x="5690" y="3068" width="220" height="64" rx="6"
+            fill="#ffffff" stroke="#1e3a5f" stroke-width="3"
+            filter="url(#shadow)"/>
+      <text x="5800" y="3108" text-anchor="middle" font-size="26" font-weight="700"
+            fill="#1e293b" font-family="Inter, Arial, sans-serif">[Settings]</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="2960" rx="78" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="2967" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">theme</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="6000" cy="3210" rx="108" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="6000" y="3217" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">language</text>
+    </g>
+
+    <g class="attribute">
+      <ellipse cx="5800" cy="3250" rx="98" ry="30"
+               fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+      <text x="5800" y="3257" text-anchor="middle" font-size="20" font-style="italic"
+            fill="#334155" font-family="Inter, Arial, sans-serif">orgName</text>
+    </g>
+
+    <g class="relation">
+      <polygon points="5150,3054 5243,3100 5150,3146 5057,3100"
+               fill="#fffbeb" stroke="#b45309" stroke-width="3"
+               filter="url(#shadow-sm)"/>
+      <text x="5150" y="3107" text-anchor="middle" font-size="20" font-weight="600"
+            fill="#78350f" font-family="Inter, Arial, sans-serif">{used in}</text>
+    </g>
+            </svg>
+        </div>
+    </div>
+    
+    <!-- ZOOM TOOLBAR -->
+    <div class="toolbar">
+        <button onclick="zoom(1.3)" title="Zoom In">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+        </button>
+        <div class="divider"></div>
+        <button onclick="zoom(0.7)" title="Zoom Out">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/></svg>
+        </button>
+        <div class="divider"></div>
+        <button onclick="resetZoom()" title="Reset">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        </button>
+    </div>
+    
+    <script>
+        let currentScale = 1;
+        const svg = document.querySelector('.canvas-area svg');
+        
+        function zoom(factor) {
+            currentScale *= factor;
+            currentScale = Math.max(0.3, Math.min(3, currentScale));
+            svg.style.transform = 'scale(' + currentScale + ')';
+            svg.style.transformOrigin = 'top left';
+        }
+        
+        function resetZoom() {
+            currentScale = 1;
+            svg.style.transform = 'scale(1)';
+        }
+        
+        // Ctrl + Scroll zoom
+        document.querySelector('.canvas-area').addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                zoom(e.deltaY < 0 ? 1.1 : 0.9);
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
