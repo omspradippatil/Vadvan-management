@@ -43,3 +43,7 @@ Thumbs.db
 # Build cache and outputs
 *.tsbuildinfo
 backend/dist/
+
+.env
+.env.*
+!.env.example
