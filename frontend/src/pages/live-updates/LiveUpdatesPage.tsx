@@ -60,15 +60,15 @@ interface TruckState {
   visible: boolean;
 }
 
-// Phase durations in ms — slower, majestic, realistic pace (~6.25 min cycle)
+// Phase durations in ms — significantly slowed down for realistic monitoring pace
 const PHASE_DURATIONS: Record<string, number> = {
-  approaching: 60000,   // 60s — massive ships take time to approach
-  turning: 20000,       // 20s — turning circle maneuver
-  docking: 25000,       // 25s — slow berth approach
-  unloading: 120000,    // 2 min — heavy unloading operations
-  reloading: 90000,     // 1.5 min — export loading
-  departing: 60000,     // 60s — heading back to sea
-  at_sea: 30000,        // 30s — spacing between cycles
+  approaching: 180000,  // 3 mins — massive ships take time to approach
+  turning: 60000,       // 1 min — turning circle maneuver
+  docking: 75000,       // 1.25 mins — slow berth approach
+  unloading: 360000,    // 6 mins — heavy unloading operations
+  reloading: 270000,    // 4.5 mins — export loading
+  departing: 180000,    // 3 mins — heading back to sea
+  at_sea: 120000,       // 2 mins — spacing between cycles
 };
 
 const TOTAL_CYCLE = Object.values(PHASE_DURATIONS).reduce((a, b) => a + b, 0);

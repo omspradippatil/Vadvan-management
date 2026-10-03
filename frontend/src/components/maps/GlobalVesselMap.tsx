@@ -128,7 +128,8 @@ export default function GlobalVesselMap() {
         {SHIPS.map((ship) => {
           // Calculate unique progress for each ship based on its speed and offset
           // so they don't move in sync or crash into each other
-          const cycleDuration = 3000000 / ship.speed; // Adjust divisor for realism
+          // Increased divisor base from 3,000,000 to 15,000,000 to slow them down realistically
+          const cycleDuration = 15000000 / ship.speed;
           const shipProgress = ((time % cycleDuration) / cycleDuration + ship.offset) % 1;
           const currentPos = getInterpolatedPosition(ship.path, shipProgress);
           return (

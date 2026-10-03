@@ -8,6 +8,7 @@ import BarChartWidget from '@/components/charts/BarChartWidget';
 import PieChartWidget from '@/components/charts/PieChartWidget';
 import LineChartWidget from '@/components/charts/LineChartWidget';
 import GlobalVesselMap from '@/components/maps/GlobalVesselMap';
+import { LiveWeatherWidget } from '@/components/widgets/LiveWeatherWidget';
 import {
   Truck,
   Users,
@@ -131,9 +132,17 @@ export const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Global Vessel Map */}
-      <div className="bg-white border border-outline-variant rounded-md shadow-card p-6 h-[400px]">
-        <GlobalVesselMap />
+      {/* Free Public API Integrations: Live Weather & Vessel Tracking */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+        {/* Live Weather Widget */}
+        <div className="bg-white border border-outline-variant rounded-md shadow-card p-6 h-[400px]">
+          <LiveWeatherWidget />
+        </div>
+
+        {/* Global Vessel Map */}
+        <div className="bg-white border border-outline-variant rounded-md shadow-card p-6 h-[400px] lg:col-span-2">
+          <GlobalVesselMap />
+        </div>
       </div>
 
       {/* Charts Grid */}
