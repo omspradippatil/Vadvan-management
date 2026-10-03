@@ -59,9 +59,28 @@ app.use('/uploads', express.static(uploadsDir));
 app.use('/api', generalLimiter);
 app.use('/api', apiRouter);
 
-// Root route health check
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date(), env: env.NODE_ENV });
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+// API Health check that tests Supabase Database connection
+app.get('/api/health', async (req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ 
+      status: 'ok', 
+      supabase: 'connected', 
+      timestamp: new Date(), 
+      env: env.NODE_ENV 
+    });
+  } catch (error) {
+    console.error('Supabase health check failed:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      supabase: 'disconnected', 
+      timestamp: new Date(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // ============================================================================
