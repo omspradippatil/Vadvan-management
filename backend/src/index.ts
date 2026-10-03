@@ -46,9 +46,9 @@ app.use((req: any, res: Response, next: NextFunction) => {
   next();
 });
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (Skip on Vercel as filesystem is read-only)
 const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
+if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
