@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Ship, Anchor, Navigation } from 'lucide-react';
+import { Ship, Anchor, Navigation, Activity } from 'lucide-react';
 
 // Custom icons using Lucide SVGs wrapped in div icons for Leaflet
 const createShipIcon = (color: string) => L.divIcon({
@@ -22,81 +22,118 @@ const portIcon = L.divIcon({
 // Vadhvan Port approximate coordinates
 const VADHVAN_PORT: [number, number] = [19.803, 72.637];
 
-// Staggered port anchors so ships don't crash into each other
-const PORT_ANCHOR_1: [number, number] = [19.803, 72.637]; // Main
-const PORT_ANCHOR_2: [number, number] = [19.780, 72.620]; // South
-const PORT_ANCHOR_3: [number, number] = [19.825, 72.645]; // North
+// Types for Live AIS Data
+type LiveShip = {
+  mmsi: number;
+  name: string;
+  lat: number;
+  lng: number;
+  speed: number;
+  heading: number;
+  lastUpdate: number;
+  color: string;
+};
 
-// Mock ship data with paths approaching Vadhvan
-const SHIPS = [
-  {
-    id: 'IMO-9780471',
-    name: 'Mumbai Maersk',
-    type: 'Ultra Large Container',
-    speed: 21.5,
-    eta: '4 hrs',
-    color: '#3B82F6',
-    offset: 0.2, // Offset to scatter them
-    path: [
-      [18.5, 71.0], [19.0, 71.5], [19.4, 72.0], PORT_ANCHOR_1
-    ] as [number, number][]
-  },
-  {
-    id: 'IMO-9406738',
-    name: 'Nhava Sheva Express',
-    type: 'Containers',
-    speed: 18.2,
-    eta: '6.5 hrs',
-    color: '#8B5CF6',
-    offset: 0.7,
-    path: [
-      [17.0, 72.0], [18.0, 72.2], [19.0, 72.4], PORT_ANCHOR_2
-    ] as [number, number][]
-  },
-  {
-    id: 'IMO-9231248',
-    name: 'MSC India',
-    type: 'Containers/General',
-    speed: 16.8,
-    eta: '12 hrs',
-    color: '#10B981',
-    offset: 0.45,
-    path: [
-      [21.5, 70.0], [20.8, 71.2], [20.2, 72.0], PORT_ANCHOR_3
-    ] as [number, number][]
-  }
-];
+// Generate deterministic colors based on MMSI
+const getShipColor = (mmsi: number) => {
+  const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899'];
+  return colors[mmsi % colors.length];
+};
 
 export default function GlobalVesselMap() {
   const [activeShip, setActiveShip] = useState<string | null>(null);
+  const [liveShips, setLiveShips] = useState<Record<number, LiveShip>>({});
+  const [isConnected, setIsConnected] = useState(false);
   
-  // Animation state to move ships along their paths independently
-  const [time, setTime] = useState(Date.now());
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(Date.now());
-    }, 100);
-    return () => clearInterval(interval);
+    // Connect to AisStream.io
+    const connectAIS = () => {
+      const socket = new WebSocket('wss://stream.aisstream.io/v0/stream');
+      
+      socket.onopen = () => {
+        setIsConnected(true);
+        const subscriptionMessage = {
+          APIKey: import.meta.env.VITE_AISSTREAM_API_KEY,
+          // Arabian Sea / India West Coast bounding box
+          BoundingBoxes: [[[15.0, 68.0], [23.0, 75.0]]],
+          FilterMessageTypes: ['PositionReport']
+        };
+        socket.send(JSON.stringify(subscriptionMessage));
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const aisMessage = JSON.parse(event.data);
+          
+          if (aisMessage.MessageType === 'PositionReport') {
+            const meta = aisMessage.MetaData;
+            const report = aisMessage.Message.PositionReport;
+            
+            if (meta && meta.MMSI && meta.latitude && meta.longitude) {
+              setLiveShips((prev) => ({
+                ...prev,
+                [meta.MMSI]: {
+                  mmsi: meta.MMSI,
+                  name: meta.ShipName ? meta.ShipName.trim() : `MMSI: ${meta.MMSI}`,
+                  lat: meta.latitude,
+                  lng: meta.longitude,
+                  speed: report.Sog || 0,
+                  heading: report.Cog || 0,
+                  lastUpdate: Date.now(),
+                  color: getShipColor(meta.MMSI)
+                }
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing AIS message', error);
+        }
+      };
+
+      socket.onclose = () => {
+        setIsConnected(false);
+        // Try to reconnect after 5 seconds
+        setTimeout(connectAIS, 5000);
+      };
+      
+      socket.onerror = (error) => {
+        console.error('AIS WebSocket Error:', error);
+      };
+
+      wsRef.current = socket;
+    };
+
+    connectAIS();
+
+    // Cleanup stale ships every 30 seconds
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      setLiveShips(prev => {
+        const next = { ...prev };
+        let changed = false;
+        Object.keys(next).forEach(key => {
+          const mmsi = Number(key);
+          // Remove ships not updated in the last 15 minutes
+          if (now - next[mmsi].lastUpdate > 15 * 60 * 1000) {
+            delete next[mmsi];
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 30000);
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      clearInterval(cleanupInterval);
+    };
   }, []);
 
-  const getInterpolatedPosition = (path: [number, number][], p: number): [number, number] => {
-    if (p >= 1) return path[path.length - 1];
-    if (p <= 0) return path[0];
-    
-    const segments = path.length - 1;
-    const scaledP = p * segments;
-    const index = Math.floor(scaledP);
-    const remainder = scaledP - index;
-    
-    const start = path[index];
-    const end = path[index + 1];
-    
-    return [
-      start[0] + (end[0] - start[0]) * remainder,
-      start[1] + (end[1] - start[1]) * remainder
-    ];
-  };
+  const liveShipsArray = Object.values(liveShips);
 
   return (
     <div className="h-full w-full relative bg-surface rounded-md border border-outline-variant overflow-hidden z-0">
@@ -106,7 +143,7 @@ export default function GlobalVesselMap() {
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
-        {/* Dark theme styled map tiles (using CartoDB Dark Matter) */}
+        {/* Dark theme styled map tiles */}
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -124,71 +161,72 @@ export default function GlobalVesselMap() {
           </Popup>
         </Marker>
 
-        {/* Ships and Paths */}
-        {SHIPS.map((ship) => {
-          // Calculate unique progress for each ship based on its speed and offset
-          // so they don't move in sync or crash into each other
-          // Increased divisor base from 3,000,000 to 15,000,000 to slow them down realistically
-          const cycleDuration = 15000000 / ship.speed;
-          const shipProgress = ((time % cycleDuration) / cycleDuration + ship.offset) % 1;
-          const currentPos = getInterpolatedPosition(ship.path, shipProgress);
-          return (
-            <React.Fragment key={ship.id}>
-              <Polyline 
-                positions={ship.path} 
-                color={ship.color} 
-                weight={2} 
-                opacity={0.3} 
-                dashArray="5, 10" 
-              />
-              <Marker 
-                position={currentPos} 
-                icon={createShipIcon(ship.color)}
-                eventHandlers={{
-                  click: () => setActiveShip(ship.id)
-                }}
-              >
-                <Popup>
-                  <div className="p-1 min-w-[150px]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ship.color }} />
-                      <h3 className="font-bold text-sm text-port-navy">{ship.name}</h3>
-                    </div>
-                    <div className="space-y-1 text-xs text-on-surface-variant">
-                      <p><strong>IMO:</strong> {ship.id}</p>
-                      <p><strong>Type:</strong> {ship.type}</p>
-                      <p><strong>Speed:</strong> {ship.speed} kn</p>
-                      <p><strong>ETA:</strong> {ship.eta}</p>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            </React.Fragment>
-          );
-        })}
+        {/* Live Ships */}
+        {liveShipsArray.map((ship) => (
+          <Marker 
+            key={ship.mmsi}
+            position={[ship.lat, ship.lng]} 
+            icon={createShipIcon(ship.color)}
+            eventHandlers={{
+              click: () => setActiveShip(ship.mmsi.toString())
+            }}
+          >
+            <Popup>
+              <div className="p-1 min-w-[150px]">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ship.color }} />
+                  <h3 className="font-bold text-sm text-port-navy">{ship.name || `Ship ${ship.mmsi}`}</h3>
+                </div>
+                <div className="space-y-1 text-xs text-on-surface-variant">
+                  <p><strong>MMSI:</strong> {ship.mmsi}</p>
+                  <p><strong>Speed:</strong> {ship.speed} kn</p>
+                  <p><strong>Heading:</strong> {ship.heading}°</p>
+                  <p><strong>Last Update:</strong> {new Date(ship.lastUpdate).toLocaleTimeString()}</p>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
       
       {/* Overlay UI */}
-      <div className="absolute top-4 left-4 z-[400] bg-white/90 backdrop-blur-sm p-3 rounded-md shadow-card border border-outline-variant">
-        <h4 className="font-semibold text-sm flex items-center gap-2 text-port-navy mb-2">
-          <Navigation size={16} className="text-secondary" /> 
-          Live Vessel Tracking
+      <div className="absolute top-4 left-4 z-[400] bg-white/90 backdrop-blur-sm p-3 rounded-md shadow-card border border-outline-variant max-h-[80%] overflow-y-auto w-64">
+        <h4 className="font-semibold text-sm flex items-center justify-between text-port-navy mb-2 pb-2 border-b border-outline-variant">
+          <span className="flex items-center gap-2">
+            <Navigation size={16} className="text-secondary" /> 
+            Live Vessel Tracking
+          </span>
+          <span title={isConnected ? "Connected to AIS" : "Connecting..."}>
+            <Activity size={14} className={isConnected ? "text-green-500 animate-pulse" : "text-gray-400"} />
+          </span>
         </h4>
-        <div className="space-y-2">
-          {SHIPS.map(ship => (
-            <div 
-              key={ship.id} 
-              className="flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-background p-1.5 rounded"
-              onClick={() => setActiveShip(ship.id)}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: ship.color }} />
-                <span className="font-medium">{ship.name}</span>
+        
+        {liveShipsArray.length === 0 ? (
+          <div className="text-xs text-on-surface-variant text-center py-4">
+            {isConnected ? 'Waiting for AIS data...' : 'Connecting to AIS stream...'}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {liveShipsArray.slice(0, 10).map(ship => (
+              <div 
+                key={ship.mmsi} 
+                className="flex items-center justify-between gap-2 text-xs cursor-pointer hover:bg-background p-1.5 rounded"
+                onClick={() => setActiveShip(ship.mmsi.toString())}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <div className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: ship.color }} />
+                  <span className="font-medium truncate">{ship.name || ship.mmsi}</span>
+                </div>
+                <span className="text-on-surface-variant font-mono shrink-0">{ship.speed}kn</span>
               </div>
-              <span className="text-on-surface-variant font-mono">{ship.eta}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+            {liveShipsArray.length > 10 && (
+              <div className="text-xs text-center text-on-surface-variant pt-2">
+                + {liveShipsArray.length - 10} more vessels
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
