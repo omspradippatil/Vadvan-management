@@ -53,6 +53,7 @@ export default function GlobalVesselMap() {
       const socket = new WebSocket('wss://stream.aisstream.io/v0/stream');
       
       socket.onopen = () => {
+        console.log("AIS WebSocket connected successfully");
         setIsConnected(true);
         const subscriptionMessage = {
           APIKey: import.meta.env.VITE_AISSTREAM_API_KEY,
@@ -66,6 +67,7 @@ export default function GlobalVesselMap() {
       socket.onmessage = async (event) => {
         try {
           const messageText = typeof event.data === 'string' ? event.data : await event.data.text();
+          console.log("AIS Message:", messageText.substring(0, 50) + "...");
           const aisMessage = JSON.parse(messageText);
           
           if (aisMessage.MessageType === 'PositionReport') {
