@@ -63,9 +63,10 @@ export default function GlobalVesselMap() {
         socket.send(JSON.stringify(subscriptionMessage));
       };
 
-      socket.onmessage = (event) => {
+      socket.onmessage = async (event) => {
         try {
-          const aisMessage = JSON.parse(event.data);
+          const messageText = typeof event.data === 'string' ? event.data : await event.data.text();
+          const aisMessage = JSON.parse(messageText);
           
           if (aisMessage.MessageType === 'PositionReport') {
             const meta = aisMessage.MetaData;
