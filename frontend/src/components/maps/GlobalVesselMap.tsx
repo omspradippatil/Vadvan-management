@@ -163,9 +163,10 @@ export default function GlobalVesselMap() {
               };
             } else {
               // Spawn new mock ship near Vadhvan Port
+              const MOCK_SHIP_NAMES = ['MSC Oscar', 'Ever Given', 'CMA CGM Jacques Saade', 'HMM Algeciras', 'Madrid Maersk'];
               next[mmsi] = {
                 mmsi,
-                name: `Mock Vessel ${i}`,
+                name: MOCK_SHIP_NAMES[i - 1] || `Mock Vessel ${i}`,
                 lat: 19.803 + (Math.random() - 0.5) * 0.1,
                 lng: 72.637 + (Math.random() - 0.5) * 0.1,
                 speed: 5 + Math.random() * 15,
@@ -200,10 +201,11 @@ export default function GlobalVesselMap() {
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
-        {/* Dark theme styled map tiles */}
+        {/* Standard OSM with CSS inversion for dark mode */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          className="map-tiles-dark"
         />
 
         {/* Port Marker */}

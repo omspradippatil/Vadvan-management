@@ -5,6 +5,7 @@ import { SSEProvider } from './contexts/SSEContext';
 import AppLayout from './components/layouts/AppLayout';
 import { Toaster } from 'react-hot-toast';
 import { useIoTSimulator } from './hooks/useIoTSimulator';
+import { usePortAutomation } from './hooks/usePortAutomation';
 
 // Pages
 import LoginPage from './pages/auth/LoginPage';
@@ -63,6 +64,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function IoTWrapper({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   useIoTSimulator(isAuthenticated); // Only run simulation when logged in
+  usePortAutomation(isAuthenticated); // Automatically populate database
   return <>{children}</>;
 }
 

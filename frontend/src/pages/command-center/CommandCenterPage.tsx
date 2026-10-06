@@ -28,7 +28,7 @@ export const CommandCenterPage: React.FC = () => {
     },
   });
 
-  const { data: ships } = useQuery({
+  const { data: ships = [] } = useQuery({
     queryKey: ['ships-live'],
     queryFn: async () => {
       try {
@@ -41,7 +41,7 @@ export const CommandCenterPage: React.FC = () => {
     placeholderData: mockShips,
   });
 
-  const { data: docks } = useQuery({
+  const { data: docks = [] } = useQuery({
     queryKey: ['docks-live'],
     queryFn: async () => {
       return mockDocks;

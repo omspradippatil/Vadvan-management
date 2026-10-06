@@ -229,3 +229,8 @@
   background: #F7F9FC;
   border-radius: 0.75rem;
 }
+
+/* Dark mode filter for OSM map tiles */
+.map-tiles-dark {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
