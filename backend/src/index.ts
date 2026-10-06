@@ -91,12 +91,14 @@ app.use(errorHandler);
 // ============================================================================
 // SERVER BOOT
 // ============================================================================
-const PORT = env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`==================================================`);
-  console.log(`🚀 Vadhvan Port backend running in ${env.NODE_ENV} mode`);
-  console.log(`🔌 Listening on port ${PORT}`);
-  console.log(`==================================================`);
-});
+if (!process.env.VERCEL) {
+  const PORT = env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`==================================================`);
+    console.log(`🚀 Vadhvan Port backend running in ${env.NODE_ENV} mode`);
+    console.log(`🔌 Listening on port ${PORT}`);
+    console.log(`==================================================`);
+  });
+}
 
 export default app;

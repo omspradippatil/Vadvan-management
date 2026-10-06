@@ -75,20 +75,25 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ onMenuToggle, sidebarCollapsed })
       </div>
 
       {/* Live Indicator */}
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-low border border-outline-variant">
-        {isConnected ? (
-          <>
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <Wifi size={13} className="text-success" />
-            <span className="text-[11px] text-success font-medium hidden sm:block">Live</span>
-          </>
-        ) : (
-          <>
-            <span className="w-2 h-2 rounded-full bg-error" />
-            <WifiOff size={13} className="text-error" />
-            <span className="text-[11px] text-error font-medium hidden sm:block">Offline</span>
-          </>
-        )}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-port-blue border border-port-blue-light/50">
+          <span className="text-[11px] text-white font-bold tracking-wider hidden sm:block">AUTOMATED</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-low border border-outline-variant">
+          {isConnected ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <Wifi size={13} className="text-success" />
+              <span className="text-[11px] text-success font-medium hidden sm:block">Live</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-error" />
+              <WifiOff size={13} className="text-error" />
+              <span className="text-[11px] text-error font-medium hidden sm:block">Offline</span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Notifications */}
