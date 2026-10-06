@@ -10,7 +10,7 @@ const REAL_SHIP_NAMES = [
   'Madrid Maersk'
 ];
 
-export function useShipAutomation() {
+export function useShipAutomation(enabled: boolean = true) {
   const queryClient = useQueryClient();
   const automationTriggered = useRef(false);
 
@@ -31,6 +31,7 @@ export function useShipAutomation() {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     if (isSuccess && Array.isArray(ships) && !automationTriggered.current) {
       automationTriggered.current = true;
       const existingNames = new Set(ships.map((s: any) => s.name));
