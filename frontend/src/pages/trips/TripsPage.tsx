@@ -33,34 +33,26 @@ export const TripsPage: React.FC = () => {
         return mockTrips.filter(t => (statusFilter ? t.status === statusFilter : true));
       }
     },
-    initialData: mockTrips,
+    placeholderData: mockTrips,
   });
 
   // Fetch Available Vehicles & Drivers
   const { data: availVehicles } = useQuery({
     queryKey: ['availableVehicles'],
     queryFn: async () => {
-      try {
-        const res = await vehiclesApi.getAvailable();
-        return res.data;
-      } catch {
-        return [];
-      }
+      const res = await vehiclesApi.getAvailable();
+      return res.data;
     },
-    initialData: [],
+    placeholderData: [],
   });
 
   const { data: availDrivers } = useQuery({
     queryKey: ['availableDrivers'],
     queryFn: async () => {
-      try {
-        const res = await driversApi.getAvailable();
-        return res.data;
-      } catch {
-        return [];
-      }
+      const res = await driversApi.getAvailable();
+      return res.data;
     },
-    initialData: [],
+    placeholderData: [],
   });
 
   // Recommendation engine query trigger

@@ -37,7 +37,7 @@ export const ContainersPage: React.FC = () => {
         return mockContainers;
       }
     },
-    initialData: mockContainers,
+    placeholderData: mockContainers,
   });
 
   // Create Container Mutation

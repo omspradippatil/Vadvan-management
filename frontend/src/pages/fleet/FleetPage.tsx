@@ -5,6 +5,7 @@ import { mockVehicles } from '@/utils/mockData';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { HealthScore } from '@/components/ui/HealthScore';
 import { Truck, Plus, Search, Filter, Trash2, Edit, AlertCircle, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const FleetPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -41,7 +42,7 @@ export const FleetPage: React.FC = () => {
         });
       }
     },
-    initialData: mockVehicles,
+    placeholderData: mockVehicles,
   });
 
   // Create Vehicle Mutation
@@ -55,7 +56,11 @@ export const FleetPage: React.FC = () => {
       setName('');
       setModel('');
       setCapacity(40);
+      toast.success('Vehicle created successfully');
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || err.message || 'Failed to create vehicle');
+    }
   });
 
   const handleCreate = (e: React.FormEvent) => {

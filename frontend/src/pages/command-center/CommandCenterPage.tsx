@@ -38,7 +38,7 @@ export const CommandCenterPage: React.FC = () => {
         return mockShips;
       }
     },
-    initialData: mockShips,
+    placeholderData: mockShips,
   });
 
   const { data: docks } = useQuery({
@@ -46,7 +46,7 @@ export const CommandCenterPage: React.FC = () => {
     queryFn: async () => {
       return mockDocks;
     },
-    initialData: mockDocks,
+    placeholderData: mockDocks,
   });
 
   const getHealthColor = (score: number) => {

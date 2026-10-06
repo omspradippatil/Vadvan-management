@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Notification } from '@/types';
 
 interface SSEContextType {
@@ -22,6 +23,8 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isConnected, setIsConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  const queryClient = useQueryClient();
+
   const handleEvent = useCallback((event: MessageEvent) => {
     try {
       const parsed: SSEEvent = JSON.parse(event.data);
@@ -44,6 +47,19 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     es.onopen = () => setIsConnected(true);
     es.onmessage = handleEvent;
+    
+    // Listen to specific data update events
+    const invalidate = (queryKey: string) => () => queryClient.invalidateQueries({ queryKey: [queryKey] });
+    
+    es.addEventListener('vehicle_update', invalidate('vehicles'));
+    es.addEventListener('driver_update', invalidate('drivers'));
+    es.addEventListener('trip_update', invalidate('trips'));
+    es.addEventListener('container_update', invalidate('containers'));
+    es.addEventListener('ship_update', invalidate('ships'));
+    es.addEventListener('dock_update', invalidate('docks'));
+    es.addEventListener('dashboard_update', invalidate('dashboard'));
+    es.addEventListener('maintenance_alert', invalidate('maintenance'));
+
     es.onerror = () => {
       setIsConnected(false);
       // auto-reconnect handled by EventSource
@@ -53,7 +69,7 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       es.close();
       setIsConnected(false);
     };
-  }, [handleEvent]);
+  }, [handleEvent, queryClient]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>

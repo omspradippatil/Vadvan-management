@@ -32,7 +32,7 @@ export const DriversPage: React.FC = () => {
         });
       }
     },
-    initialData: mockDrivers,
+    placeholderData: mockDrivers,
   });
 
   const createMutation = useMutation({

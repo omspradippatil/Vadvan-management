@@ -57,8 +57,8 @@ export default function GlobalVesselMap() {
         setIsConnected(true);
         const subscriptionMessage = {
           APIKey: import.meta.env.VITE_AISSTREAM_API_KEY,
-          // Arabian Sea / India West Coast bounding box
-          BoundingBoxes: [[[15.0, 68.0], [23.0, 75.0]]],
+          // Global bounding box
+          BoundingBoxes: [[[-90, -180], [90, 180]]],
           FilterMessageTypes: ['PositionReport']
         };
         socket.send(JSON.stringify(subscriptionMessage));
@@ -67,7 +67,6 @@ export default function GlobalVesselMap() {
       socket.onmessage = async (event) => {
         try {
           const messageText = typeof event.data === 'string' ? event.data : await event.data.text();
-          console.log("AIS Message:", messageText.substring(0, 50) + "...");
           const aisMessage = JSON.parse(messageText);
           
           if (aisMessage.MessageType === 'PositionReport') {
@@ -128,11 +127,66 @@ export default function GlobalVesselMap() {
       });
     }, 30000);
 
+    // Mock ship generator if API returns no data or fails
+    const mockInterval = setInterval(() => {
+      setLiveShips(prev => {
+        // If we have real ships (or previous mock ships), just update/add mocks
+        const next = { ...prev };
+        const now = Date.now();
+        
+        // Ensure we always have at least 5 mock ships
+        const currentMockMmsis = Object.keys(next).map(Number).filter(id => id < 1000);
+        
+        if (Object.keys(next).length < 5 || currentMockMmsis.length > 0) {
+          // Add or update mock ships
+          for (let i = 1; i <= 5; i++) {
+            const mmsi = i;
+            if (next[mmsi]) {
+              // Move existing mock ship
+              const speed = next[mmsi].speed;
+              const heading = next[mmsi].heading;
+              
+              // Randomly adjust heading
+              const newHeading = (heading + (Math.random() - 0.5) * 20 + 360) % 360;
+              const headingRad = newHeading * (Math.PI / 180);
+              
+              // Move based on speed (approximate degrees conversion for simplicity)
+              const latDelta = Math.cos(headingRad) * (speed * 0.0001);
+              const lngDelta = Math.sin(headingRad) * (speed * 0.0001);
+              
+              next[mmsi] = {
+                ...next[mmsi],
+                lat: next[mmsi].lat + latDelta,
+                lng: next[mmsi].lng + lngDelta,
+                heading: newHeading,
+                lastUpdate: now
+              };
+            } else {
+              // Spawn new mock ship near Vadhvan Port
+              next[mmsi] = {
+                mmsi,
+                name: `Mock Vessel ${i}`,
+                lat: 19.803 + (Math.random() - 0.5) * 0.1,
+                lng: 72.637 + (Math.random() - 0.5) * 0.1,
+                speed: 5 + Math.random() * 15,
+                heading: Math.random() * 360,
+                lastUpdate: now,
+                color: getShipColor(mmsi)
+              };
+            }
+          }
+          return next;
+        }
+        return prev;
+      });
+    }, 1000);
+
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
       }
       clearInterval(cleanupInterval);
+      clearInterval(mockInterval);
     };
   }, []);
 

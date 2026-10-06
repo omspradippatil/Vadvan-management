@@ -38,7 +38,7 @@ export const DashboardPage: React.FC = () => {
         return mockKPIs;
       }
     },
-    initialData: mockKPIs,
+    placeholderData: mockKPIs,
   });
 
   // Fetch Chart Data from API
@@ -52,7 +52,7 @@ export const DashboardPage: React.FC = () => {
         return mockCharts;
       }
     },
-    initialData: mockCharts,
+    placeholderData: mockCharts,
   });
 
   // Calculate Health rating color
