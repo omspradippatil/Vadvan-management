@@ -169,21 +169,30 @@ export default function GlobalVesselMap() {
               const latDelta = Math.cos(headingRad) * (speed * 0.0001);
               const lngDelta = Math.sin(headingRad) * (speed * 0.0001);
               
+              let newLat = next[mmsi].lat + latDelta;
+              let newLng = next[mmsi].lng + lngDelta;
+              
+              // Keep ships strictly in the Arabian Sea (West of Coastline ~72.6)
+              if (newLng > 72.5) {
+                newLng = 72.5 - Math.random() * 0.1; // Bounce back into ocean
+                next[mmsi].heading = (heading + 180) % 360; // Turn around
+              }
+
               next[mmsi] = {
                 ...next[mmsi],
-                lat: next[mmsi].lat + latDelta,
-                lng: next[mmsi].lng + lngDelta,
-                heading: newHeading,
+                lat: newLat,
+                lng: newLng,
+                heading: next[mmsi].heading !== heading ? next[mmsi].heading : newHeading,
                 lastUpdate: now
               };
             } else {
-              // Spawn new mock ship near Vadhvan Port
+              // Spawn new mock ship in the Arabian Sea (Offshore)
               const MOCK_SHIP_NAMES = ['MSC Oscar', 'Ever Given', 'CMA CGM Jacques Saade', 'HMM Algeciras', 'Madrid Maersk'];
               next[mmsi] = {
                 mmsi,
                 name: MOCK_SHIP_NAMES[i - 1] || `Mock Vessel ${i}`,
-                lat: 19.803 + (Math.random() - 0.5) * 0.1,
-                lng: 72.637 + (Math.random() - 0.5) * 0.1,
+                lat: 19.6 + Math.random() * 0.4, // 19.6 to 20.0
+                lng: 71.8 + Math.random() * 0.7, // 71.8 to 72.5 (Ocean only)
                 speed: 5 + Math.random() * 15,
                 heading: Math.random() * 360,
                 lastUpdate: now,

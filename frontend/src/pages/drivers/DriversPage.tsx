@@ -46,6 +46,13 @@ export const DriversPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => driversApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+    },
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
@@ -139,6 +146,7 @@ export const DriversPage: React.FC = () => {
               <th>Experience</th>
               <th>Safety Score</th>
               <th>Current Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -166,6 +174,19 @@ export const DriversPage: React.FC = () => {
                 </td>
                 <td>
                   <StatusBadge status={driver.status} />
+                </td>
+                <td>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this driver?')) {
+                        deleteMutation.mutate(driver.id);
+                      }
+                    }}
+                    className="btn btn-danger text-xs px-2 py-1"
+                    disabled={deleteMutation.isPending}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}

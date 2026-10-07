@@ -63,6 +63,17 @@ export const FleetPage: React.FC = () => {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => vehiclesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      toast.success('Vehicle deleted successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete vehicle');
+    }
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
@@ -167,6 +178,7 @@ export const FleetPage: React.FC = () => {
               <th>Fuel Level</th>
               <th>Health Status</th>
               <th>Current Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -202,6 +214,19 @@ export const FleetPage: React.FC = () => {
                 </td>
                 <td>
                   <StatusBadge status={vehicle.status} />
+                </td>
+                <td>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this vehicle?')) {
+                        deleteMutation.mutate(vehicle.id);
+                      }
+                    }}
+                    className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
+                    disabled={deleteMutation.isPending}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}

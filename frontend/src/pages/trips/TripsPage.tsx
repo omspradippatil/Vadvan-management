@@ -104,6 +104,13 @@ export const TripsPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tripsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    },
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
@@ -221,6 +228,17 @@ export const TripsPage: React.FC = () => {
                         Cancel
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this trip?')) {
+                          deleteMutation.mutate(trip.id);
+                        }
+                      }}
+                      className="btn bg-error text-white hover:bg-red-600 text-xs px-2.5 py-1"
+                      disabled={deleteMutation.isPending}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </td>
               </tr>

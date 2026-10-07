@@ -51,6 +51,13 @@ export const ContainersPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => containersApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+    },
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
@@ -147,6 +154,7 @@ export const ContainersPage: React.FC = () => {
                 <th>Terminal Berth</th>
                 <th>Destination Yard</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -163,6 +171,19 @@ export const ContainersPage: React.FC = () => {
                   <td className="text-xs">{c.destWarehouse?.name || 'Warehouse A'}</td>
                   <td>
                     <StatusBadge status={c.status} />
+                  </td>
+                  <td>
+                    <button 
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this container?')) {
+                          deleteMutation.mutate(c.id);
+                        }
+                      }}
+                      className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
+                      disabled={deleteMutation.isPending}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
