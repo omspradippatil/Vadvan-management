@@ -19,6 +19,7 @@ export function useShipAutomation(enabled: boolean = true) {
     queryKey: ['ships-automation'],
     queryFn: () => shipsApi.getAll(),
     staleTime: 60000, 
+    enabled: enabled,
   });
 
   const createShipMut = useMutation({
