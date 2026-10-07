@@ -516,3 +516,12 @@ Built with ❤️ for Odoo Hackathon 2026
 ---
 
 *Last Updated: July 2026*
+
+---
+
+## 🧪 Production Environment Test Report
+
+The live production application (`vadvan-management.vercel.app`) has undergone fully automated End-to-End testing using a Chrome browser simulation (Puppeteer/Playwright). The system was rigorously tested for routing integrity, UI rendering logic, and complete Database CRUD verification.
+
+**[View the Full Automated Production E2E Test Report](./PRODUCTION_TEST_REPORT.md)**
+
