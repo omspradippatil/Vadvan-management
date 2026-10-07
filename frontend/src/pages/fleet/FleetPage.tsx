@@ -45,13 +45,14 @@ export const FleetPage: React.FC = () => {
     placeholderData: mockVehicles,
   });
 
+  const [editingId, setEditingId] = useState<string|null>(null);
+
   // Create Vehicle Mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => vehiclesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       setIsAddOpen(false);
-      // Reset form
       setRegNo('');
       setName('');
       setModel('');
@@ -60,6 +61,23 @@ export const FleetPage: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || err.message || 'Failed to create vehicle');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => vehiclesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      setIsAddOpen(false);
+      setEditingId(null);
+      setRegNo('');
+      setName('');
+      setModel('');
+      setCapacity(40);
+      toast.success('Vehicle updated successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || err.message || 'Failed to update vehicle');
     }
   });
 
@@ -76,13 +94,29 @@ export const FleetPage: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
+    const payload = {
       registrationNo: regNo,
       name,
       model,
       type,
       maxCapacity: parseFloat(capacity as any),
-    });
+    };
+    
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const openEdit = (vehicle: any) => {
+    setEditingId(vehicle.id);
+    setRegNo(vehicle.registrationNo);
+    setName(vehicle.name);
+    setModel(vehicle.model);
+    setType(vehicle.type);
+    setCapacity(vehicle.maxCapacity);
+    setIsAddOpen(true);
   };
 
   return (
@@ -216,17 +250,25 @@ export const FleetPage: React.FC = () => {
                   <StatusBadge status={vehicle.status} />
                 </td>
                 <td>
-                  <button 
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete this vehicle?')) {
-                        deleteMutation.mutate(vehicle.id);
-                      }
-                    }}
-                    className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
-                    disabled={deleteMutation.isPending}
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openEdit(vehicle)}
+                      className="btn btn-secondary text-xs px-2 py-1 flex items-center justify-center"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this vehicle?')) {
+                          deleteMutation.mutate(vehicle.id);
+                        }
+                      }}
+                      className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
+                      disabled={deleteMutation.isPending}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -239,8 +281,8 @@ export const FleetPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-md border border-outline-variant shadow-modal w-full max-w-md p-6 animate-fade-in">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-headline-sm font-bold text-on-surface">Add Vehicle to Registry</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <h3 className="text-headline-sm font-bold text-on-surface">{editingId ? 'Edit Vehicle' : 'Add Vehicle to Registry'}</h3>
+              <button onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <X size={18} />
               </button>
             </div>
@@ -311,11 +353,11 @@ export const FleetPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsAddOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Create Vehicle
+                <button type="submit" className="btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingId ? 'Update Vehicle' : 'Create Vehicle'}
                 </button>
               </div>
             </form>

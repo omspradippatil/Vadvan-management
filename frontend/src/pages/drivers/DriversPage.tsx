@@ -35,11 +35,25 @@ export const DriversPage: React.FC = () => {
     placeholderData: mockDrivers,
   });
 
+  const [editingId, setEditingId] = useState<string|null>(null);
+
   const createMutation = useMutation({
     mutationFn: (data: any) => driversApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       setIsAddOpen(false);
+      setName('');
+      setLicenseNo('');
+      setPhone('');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => driversApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      setIsAddOpen(false);
+      setEditingId(null);
       setName('');
       setLicenseNo('');
       setPhone('');
@@ -55,14 +69,30 @@ export const DriversPage: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
+    const payload = {
       name,
       licenseNo,
       licenseCategory,
       phone,
       experienceYears: parseInt(experience as any),
-      licenseExpiry: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString(), // 5 yrs out
-    });
+      licenseExpiry: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const openEdit = (driver: any) => {
+    setEditingId(driver.id);
+    setName(driver.name);
+    setLicenseNo(driver.licenseNo);
+    setLicenseCategory(driver.licenseCategory);
+    setPhone(driver.phone);
+    setExperience(driver.experienceYears || 5);
+    setIsAddOpen(true);
   };
 
   const getSafetyClass = (score: number) => {
@@ -176,17 +206,25 @@ export const DriversPage: React.FC = () => {
                   <StatusBadge status={driver.status} />
                 </td>
                 <td>
-                  <button 
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete this driver?')) {
-                        deleteMutation.mutate(driver.id);
-                      }
-                    }}
-                    className="btn btn-danger text-xs px-2 py-1"
-                    disabled={deleteMutation.isPending}
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openEdit(driver)}
+                      className="btn btn-secondary text-xs px-2 py-1"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this driver?')) {
+                          deleteMutation.mutate(driver.id);
+                        }
+                      }}
+                      className="btn btn-danger text-xs px-2 py-1"
+                      disabled={deleteMutation.isPending}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -199,8 +237,8 @@ export const DriversPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-md border border-outline-variant shadow-modal w-full max-w-md p-6 animate-fade-in">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-headline-sm font-bold text-on-surface">Add Driver Profile</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <h3 className="text-headline-sm font-bold text-on-surface">{editingId ? 'Edit Driver' : 'Add Driver Profile'}</h3>
+              <button onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <X size={18} />
               </button>
             </div>
@@ -269,11 +307,11 @@ export const DriversPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsAddOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Register Driver
+                <button type="submit" className="btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingId ? 'Update Driver' : 'Register Driver'}
                 </button>
               </div>
             </form>

@@ -50,8 +50,14 @@ export default function MaintenancePage() {
   const { data: vehicles } = useQuery({ queryKey: ['vehicles-all'], queryFn: () => vehiclesApi.getAll() });
   const { data: equipment } = useQuery({ queryKey: ['equipment-all'], queryFn: () => equipmentApi.getAll() });
 
+  const [editing, setEditing] = useState<MaintenanceLog | null>(null);
+
   const createMut = useMutation({
     mutationFn: (d: FormData) => maintenanceApi.create(d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['maintenance'] }); qc.invalidateQueries({ queryKey: ['vehicles'] }); closeModal(); },
+  });
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: FormData }) => maintenanceApi.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['maintenance'] }); qc.invalidateQueries({ queryKey: ['vehicles'] }); closeModal(); },
   });
   const closeMut = useMutation({
@@ -64,8 +70,21 @@ export default function MaintenancePage() {
   });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) });
-  const closeModal = () => { setShowModal(false); reset({}); };
-  const onSubmit = (d: FormData) => createMut.mutate(d);
+  const openCreate = () => { setEditing(null); reset({}); setShowModal(true); };
+  const openEdit = (m: MaintenanceLog) => {
+    setEditing(m);
+    reset({
+      vehicleId: m.vehicleId || undefined,
+      equipmentId: m.equipmentId || undefined,
+      type: m.type as any,
+      description: m.description,
+      technicianName: m.technicianName || undefined,
+      scheduledAt: m.scheduledAt ? m.scheduledAt.slice(0,16) : undefined
+    });
+    setShowModal(true);
+  };
+  const closeModal = () => { setShowModal(false); setEditing(null); reset({}); };
+  const onSubmit = (d: FormData) => editing ? updateMut.mutate({ id: editing.id, data: d }) : createMut.mutate(d);
 
   const list: MaintenanceLog[] = (data as any)?.data ?? [];
   const filtered = list.filter(m =>
@@ -91,7 +110,7 @@ export default function MaintenancePage() {
           <h1 className="text-display-lg text-on-surface">Maintenance</h1>
           <p className="text-body-sm text-on-surface-variant mt-1">Track vehicle and equipment service records</p>
         </div>
-        <button className="btn btn-primary flex items-center gap-2" onClick={()=>setShowModal(true)}><Plus size={16}/>New Maintenance</button>
+        <button className="btn btn-primary flex items-center gap-2" onClick={openCreate}><Plus size={16}/>New Maintenance</button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -161,6 +180,7 @@ export default function MaintenancePage() {
                           onClick={()=>{ setCloseTarget(m); setCloseCost(''); }}
                         >Close</button>
                       )}
+                      <button className="btn btn-secondary text-xs" onClick={()=>openEdit(m)}>Edit</button>
                       <button className="btn btn-danger text-xs" onClick={()=>setDeleteTarget(m)}>Del</button>
                     </div>
                   </td>
@@ -176,8 +196,8 @@ export default function MaintenancePage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg">
             <div className="p-6 border-b border-outline-variant">
-              <h2 className="text-headline-sm font-semibold">New Maintenance Record</h2>
-              <p className="text-body-sm text-on-surface-variant mt-1">Opening this will set vehicle status to In Shop</p>
+              <h2 className="text-headline-sm font-semibold">{editing ? 'Edit Maintenance Record' : 'New Maintenance Record'}</h2>
+              {!editing && <p className="text-body-sm text-on-surface-variant mt-1">Opening this will set vehicle status to In Shop</p>}
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -219,7 +239,7 @@ export default function MaintenancePage() {
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" className="btn btn-secondary flex-1" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary flex-1" disabled={createMut.isPending}>Create</button>
+                <button type="submit" className="btn btn-primary flex-1" disabled={createMut.isPending || updateMut.isPending}>{editing ? 'Update' : 'Create'}</button>
               </div>
             </form>
           </div>

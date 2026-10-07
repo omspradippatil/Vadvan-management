@@ -88,19 +88,33 @@ export const TripsPage: React.FC = () => {
     }
   };
 
+  const [editingId, setEditingId] = useState<string|null>(null);
+
   // Create Trip Mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => tripsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       setIsAddOpen(false);
-      // Reset
       setSource('');
       setDestination('');
       setVehicleId('');
       setDriverId('');
       setRecData(null);
       setRecEngineActive(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => tripsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      setIsAddOpen(false);
+      setEditingId(null);
+      setSource('');
+      setDestination('');
+      setVehicleId('');
+      setDriverId('');
     },
   });
 
@@ -113,14 +127,28 @@ export const TripsPage: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
+    const payload = {
       source,
       destination,
       cargoWeight: parseFloat(weight as any),
       vehicleId,
       driverId,
-      priority: 'MEDIUM',
-    });
+    };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const openEdit = (trip: any) => {
+    setEditingId(trip.id);
+    setSource(trip.source);
+    setDestination(trip.destination);
+    setWeight(trip.cargoWeight);
+    setVehicleId(trip.vehicleId || '');
+    setDriverId(trip.driverId || '');
+    setIsAddOpen(true);
   };
 
   // Dispatch / Complete / Cancel Mutations
@@ -229,6 +257,12 @@ export const TripsPage: React.FC = () => {
                       </button>
                     )}
                     <button
+                      onClick={() => openEdit(trip)}
+                      className="btn btn-secondary text-xs px-2.5 py-1"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={() => {
                         if (window.confirm('Are you sure you want to delete this trip?')) {
                           deleteMutation.mutate(trip.id);
@@ -252,8 +286,8 @@ export const TripsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-md border border-outline-variant shadow-modal w-full max-w-lg p-6 animate-fade-in">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-headline-sm font-bold text-on-surface">Create Trip Request</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <h3 className="text-headline-sm font-bold text-on-surface">{editingId ? 'Edit Trip' : 'Create Trip Request'}</h3>
+              <button onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <XCircle size={18} />
               </button>
             </div>
@@ -361,11 +395,11 @@ export const TripsPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsAddOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Request Dispatch
+                <button type="submit" className="btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingId ? 'Update Trip' : 'Request Dispatch'}
                 </button>
               </div>
             </form>

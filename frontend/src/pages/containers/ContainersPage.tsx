@@ -40,12 +40,25 @@ export const ContainersPage: React.FC = () => {
     placeholderData: mockContainers,
   });
 
+  const [editingId, setEditingId] = useState<string|null>(null);
+
   // Create Container Mutation
   const createMutation = useMutation({
     mutationFn: (data: any) => containersApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['containers'] });
       setIsAddOpen(false);
+      setCode('');
+      setWeight(25);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => containersApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['containers'] });
+      setIsAddOpen(false);
+      setEditingId(null);
       setCode('');
       setWeight(25);
     },
@@ -60,12 +73,25 @@ export const ContainersPage: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
+    const payload = {
       containerCode: code,
       weight: parseFloat(weight as any),
       priority,
       status: 'WAITING',
-    });
+    };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setCode(c.containerCode);
+    setWeight(c.weight);
+    setPriority(c.priority);
+    setIsAddOpen(true);
   };
 
   const getPriorityBadge = (p: string) => {
@@ -173,17 +199,25 @@ export const ContainersPage: React.FC = () => {
                     <StatusBadge status={c.status} />
                   </td>
                   <td>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this container?')) {
-                          deleteMutation.mutate(c.id);
-                        }
-                      }}
-                      className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
-                      disabled={deleteMutation.isPending}
-                    >
-                      Delete
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => openEdit(c)}
+                        className="btn btn-secondary text-xs px-2 py-1 flex items-center justify-center"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this container?')) {
+                            deleteMutation.mutate(c.id);
+                          }
+                        }}
+                        className="btn btn-danger text-xs px-2 py-1 flex items-center justify-center"
+                        disabled={deleteMutation.isPending}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -197,8 +231,8 @@ export const ContainersPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-md border border-outline-variant shadow-modal w-full max-w-md p-6 animate-fade-in">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-headline-sm font-bold text-on-surface">Add Container</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <h3 className="text-headline-sm font-bold text-on-surface">{editingId ? 'Edit Container' : 'Add Container'}</h3>
+              <button onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <X size={18} />
               </button>
             </div>
@@ -243,11 +277,11 @@ export const ContainersPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsAddOpen(false)} className="btn-secondary">
+                <button type="button" onClick={() => { setIsAddOpen(false); setEditingId(null); }} className="btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  Create Container
+                <button type="submit" className="btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {editingId ? 'Update Container' : 'Create Container'}
                 </button>
               </div>
             </form>
