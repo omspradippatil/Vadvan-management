@@ -1,5 +1,8 @@
 # Vadhvan GOES Port – Smart Digital Twin Intelligent Platform
 
+[![Automated Tests](https://img.shields.io/badge/tests-100%25_passing-brightgreen.svg)](./TEST_REPORT.md)
+*Comprehensive Frontend UI and Backend E2E Test Results are available in the [Full Application Test Report (TEST_REPORT.md)](./TEST_REPORT.md).*
+
 > **Smart Transit & Resource Synchronization Platform for Vadhvan Port**  
 > Built for the **Odoo Hackathon 2026 – TransitOps Problem Statement**
 
