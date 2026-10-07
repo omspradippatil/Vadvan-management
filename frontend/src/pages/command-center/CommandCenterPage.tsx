@@ -12,7 +12,8 @@ export const CommandCenterPage: React.FC = () => {
       try {
         const res = await portHealthApi.getScore();
         return res.data;
-      } catch {
+      } catch (err) {
+        console.error('Health check API failed:', err);
         return {
           score: 84,
           rating: 'GOOD',
@@ -26,6 +27,7 @@ export const CommandCenterPage: React.FC = () => {
         };
       }
     },
+    refetchInterval: 5000,
   });
 
   const { data: ships = [] } = useQuery({

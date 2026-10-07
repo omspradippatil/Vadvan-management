@@ -39,6 +39,7 @@ export const DashboardPage: React.FC = () => {
       }
     },
     placeholderData: mockKPIs,
+    refetchInterval: 5000,
   });
 
   // Fetch Chart Data from API
@@ -53,6 +54,7 @@ export const DashboardPage: React.FC = () => {
       }
     },
     placeholderData: mockCharts,
+    refetchInterval: 15000,
   });
 
   // Calculate Health rating color
