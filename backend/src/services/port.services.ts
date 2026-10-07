@@ -57,6 +57,10 @@ export const shipService = {
     
     if (!ship || !dock) throw { statusCode: 404, message: 'Ship or Dock not found.' };
     if (dock.status !== 'AVAILABLE') throw { statusCode: 422, message: 'Dock is not available.' };
+    
+    if (ship.containerCount > dock.capacity) {
+      throw { statusCode: 400, message: `Dock capacity (${dock.capacity}) is insufficient for ship containers (${ship.containerCount}).` };
+    }
 
     const [updatedShip, updatedDock] = await prisma.$transaction([
       prisma.ship.update({

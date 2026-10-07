@@ -134,9 +134,9 @@ export const vehicleService = {
   },
 
   async delete(id: string) {
-    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
-    if (vehicle?.status === 'ON_TRIP') {
-      throw { statusCode: 400, message: 'Cannot delete vehicle currently on a trip.' };
+    const activeTrips = await prisma.trip.findFirst({ where: { vehicleId: id } });
+    if (activeTrips) {
+      throw { statusCode: 400, message: 'Cannot delete vehicle because it is assigned to one or more trips (including drafts).' };
     }
     return prisma.vehicle.delete({ where: { id } });
   },
@@ -197,9 +197,9 @@ export const driverService = {
   },
 
   async delete(id: string) {
-    const driver = await prisma.driver.findUnique({ where: { id } });
-    if (driver?.status === 'ON_TRIP') {
-      throw { statusCode: 400, message: 'Cannot delete driver currently on a trip.' };
+    const activeTrips = await prisma.trip.findFirst({ where: { driverId: id } });
+    if (activeTrips) {
+      throw { statusCode: 400, message: 'Cannot delete driver because they are assigned to one or more trips (including drafts).' };
     }
     return prisma.driver.delete({ where: { id } });
   },
@@ -250,6 +250,17 @@ export const tripService = {
   },
 
   async create(data: any) {
+    // Validate Capacity
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: data.vehicleId } });
+    if (!vehicle) throw { statusCode: 404, message: 'Vehicle not found.' };
+    
+    if (data.cargoWeight > vehicle.maxCapacity) {
+      throw { 
+        statusCode: 400, 
+        message: `Cargo weight (${data.cargoWeight} tons) exceeds vehicle maximum capacity (${vehicle.maxCapacity} tons).`
+      };
+    }
+
     // Generate trip number
     const count = await prisma.trip.count();
     const tripNumber = `TRIP-${String(count + 1).padStart(5, '0')}`;
@@ -263,10 +274,27 @@ export const tripService = {
   },
 
   async update(id: string, data: any) {
+    if (data.cargoWeight || data.vehicleId) {
+      const trip = await prisma.trip.findUnique({ where: { id } });
+      if (!trip) throw { statusCode: 404, message: 'Trip not found.' };
+      
+      const vId = data.vehicleId || trip.vehicleId;
+      const weight = data.cargoWeight || trip.cargoWeight;
+      
+      const vehicle = await prisma.vehicle.findUnique({ where: { id: vId } });
+      if (vehicle && weight > vehicle.maxCapacity) {
+        throw { statusCode: 400, message: `Cargo weight (${weight} tons) exceeds vehicle maximum capacity (${vehicle.maxCapacity} tons).` };
+      }
+    }
     return prisma.trip.update({ where: { id }, data });
   },
 
   async delete(id: string) {
+    const activeFuel = await prisma.fuelLog.findFirst({ where: { tripId: id } });
+    if (activeFuel) throw { statusCode: 400, message: 'Cannot delete trip with attached fuel logs.' };
+    const activeExpenses = await prisma.expense.findFirst({ where: { tripId: id } });
+    if (activeExpenses) throw { statusCode: 400, message: 'Cannot delete trip with attached expenses.' };
+    
     return prisma.trip.delete({ where: { id } });
   },
 
@@ -467,6 +495,14 @@ export const containerService = {
   },
 
   async delete(id: string) {
+    const activeTrips = await prisma.trip.findFirst({ where: { containerId: id } });
+    if (activeTrips) {
+      throw { statusCode: 400, message: 'Cannot delete container because it is linked to one or more trips.' };
+    }
+    const activeRequests = await prisma.containerRequest.findFirst({ where: { containerId: id } });
+    if (activeRequests) {
+      throw { statusCode: 400, message: 'Cannot delete container because it has pending requests.' };
+    }
     return prisma.container.delete({ where: { id } });
   },
 
