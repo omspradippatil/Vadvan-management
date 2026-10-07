@@ -57,8 +57,8 @@ export default function GlobalVesselMap() {
         setIsConnected(true);
         const subscriptionMessage = {
           APIKey: import.meta.env.VITE_AISSTREAM_API_KEY,
-          // Global bounding box
-          BoundingBoxes: [[[-90, -180], [90, 180]]],
+          // Narrow bounding box around Vadhvan Port to prevent browser crash
+          BoundingBoxes: [[[18.5, 71.0], [20.5, 73.5]]],
           FilterMessageTypes: ['PositionReport']
         };
         socket.send(JSON.stringify(subscriptionMessage));
@@ -74,19 +74,34 @@ export default function GlobalVesselMap() {
             const report = aisMessage.Message.PositionReport;
             
             if (meta && meta.MMSI && meta.latitude && meta.longitude) {
-              setLiveShips((prev) => ({
-                ...prev,
-                [meta.MMSI]: {
-                  mmsi: meta.MMSI,
-                  name: meta.ShipName ? meta.ShipName.trim() : `MMSI: ${meta.MMSI}`,
-                  lat: meta.latitude,
-                  lng: meta.longitude,
-                  speed: report.Sog || 0,
-                  heading: report.Cog || 0,
-                  lastUpdate: Date.now(),
-                  color: getShipColor(meta.MMSI)
+              setLiveShips((prev) => {
+                const next = {
+                  ...prev,
+                  [meta.MMSI]: {
+                    mmsi: meta.MMSI,
+                    name: meta.ShipName ? meta.ShipName.trim() : `MMSI: ${meta.MMSI}`,
+                    lat: meta.latitude,
+                    lng: meta.longitude,
+                    speed: report.Sog || 0,
+                    heading: report.Cog || 0,
+                    lastUpdate: Date.now(),
+                    color: getShipColor(meta.MMSI)
+                  }
+                };
+                
+                // Enforce max 40 ships to prevent UI lag and browser freezing
+                const keys = Object.keys(next);
+                if (keys.length > 40) {
+                  const sortedKeys = keys.sort((a, b) => next[Number(b)].lastUpdate - next[Number(a)].lastUpdate);
+                  const trimmedNext: Record<number, LiveShip> = {};
+                  sortedKeys.slice(0, 40).forEach(k => {
+                    trimmedNext[Number(k)] = next[Number(k)];
+                  });
+                  return trimmedNext;
                 }
-              }));
+                
+                return next;
+              });
             }
           }
         } catch (error) {
