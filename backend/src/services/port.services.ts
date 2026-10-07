@@ -135,6 +135,10 @@ export const dockService = {
   },
 
   async delete(id: string) {
+    const dock = await prisma.dock.findUnique({ where: { id } });
+    if (dock?.assignedShipId) throw { statusCode: 400, message: 'Cannot delete dock while a ship is assigned to it.' };
+    const containers = await prisma.container.findFirst({ where: { sourceDockId: id } });
+    if (containers) throw { statusCode: 400, message: 'Cannot delete dock with active containers.' };
     return prisma.dock.delete({ where: { id } });
   },
 };
@@ -172,6 +176,10 @@ export const warehouseService = {
   },
 
   async delete(id: string) {
+    const docks = await prisma.dock.findFirst({ where: { warehouseId: id } });
+    if (docks) throw { statusCode: 400, message: 'Cannot delete warehouse with attached docks.' };
+    const containers = await prisma.container.findFirst({ where: { destWarehouseId: id } });
+    if (containers) throw { statusCode: 400, message: 'Cannot delete warehouse with active containers.' };
     return prisma.warehouse.delete({ where: { id } });
   },
 };
@@ -245,6 +253,10 @@ export const equipmentService = {
   },
 
   async delete(id: string) {
+    const activeMaintenance = await prisma.maintenanceLogs.findFirst({ where: { equipmentId: id } });
+    if (activeMaintenance) {
+      throw { statusCode: 400, message: 'Cannot delete equipment with attached maintenance logs.' };
+    }
     return prisma.equipment.delete({ where: { id } });
   },
 
