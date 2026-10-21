@@ -67,3 +67,9 @@ backend-java/.env
 backend-java/.env.*
 !backend-java/.env.example
 
+# Dynamic Port Sync files
+.active_backend_port
+*.active_port
+.active_port
+
+

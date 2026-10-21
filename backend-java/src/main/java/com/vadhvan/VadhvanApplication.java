@@ -11,13 +11,68 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.nio.file.Files;
 
 @SpringBootApplication
 public class VadhvanApplication {
 
     public static void main(String[] args) {
         loadEnvIfPresent();
+        assignAvailablePort();
         SpringApplication.run(VadhvanApplication.class, args);
+    }
+
+    private static void assignAvailablePort() {
+        int preferredPort = 5001;
+        String portStr = System.getProperty("PORT", System.getenv("PORT"));
+        if (portStr != null) {
+            try {
+                preferredPort = Integer.parseInt(portStr.trim());
+            } catch (Exception ignored) {}
+        }
+
+        int availablePort = findAvailablePort(preferredPort);
+        System.setProperty("server.port", String.valueOf(availablePort));
+        System.out.println("==================================================================");
+        if (availablePort != preferredPort) {
+            System.out.println("⚠️  [PortSync] Port " + preferredPort + " was occupied! Auto-shifted to port: " + availablePort);
+        } else {
+            System.out.println("🚀 [PortSync] Server port ready: " + availablePort);
+        }
+        System.out.println("==================================================================");
+
+        writeActivePortFiles(availablePort);
+    }
+
+    private static int findAvailablePort(int startPort) {
+        for (int p = startPort; p < startPort + 50; p++) {
+            try (ServerSocket socket = new ServerSocket(p)) {
+                return p;
+            } catch (IOException ignored) {
+                // Port is occupied, try next one
+            }
+        }
+        return startPort;
+    }
+
+    private static void writeActivePortFiles(int port) {
+        String[] paths = {
+                ".active_backend_port",
+                "../.active_backend_port",
+                "backend-java/.active_port",
+                ".active_port"
+        };
+        for (String p : paths) {
+            try {
+                File file = new File(p);
+                File parent = file.getParentFile();
+                if (parent == null || parent.exists()) {
+                    Files.writeString(file.toPath(), String.valueOf(port));
+                }
+            } catch (Exception ignored) {}
+        }
     }
 
     @Bean
@@ -71,13 +126,11 @@ public class VadhvanApplication {
                             value = value.substring(1, value.length() - 1);
                         }
 
-                        // If not already set in system properties or environment, set system property
                         if (System.getProperty(key) == null && System.getenv(key) == null) {
                             System.setProperty(key, value);
                         }
                     }
                 } catch (Exception ignored) {
-                    // Fail silently, fallback to application.properties defaults
                 }
                 break;
             }
