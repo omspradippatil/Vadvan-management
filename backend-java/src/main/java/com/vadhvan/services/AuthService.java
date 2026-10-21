@@ -42,7 +42,6 @@ public class AuthService {
         return new AuthResponse(token, toUserDto(user));
     }
 
-    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail().toLowerCase().trim())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
@@ -59,7 +58,6 @@ public class AuthService {
         return new AuthResponse(token, toUserDto(user));
     }
 
-    @Transactional(readOnly = true)
     public UserDto getProfile(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));

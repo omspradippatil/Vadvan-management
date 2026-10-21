@@ -48,8 +48,20 @@ public class DatabaseConfig {
                 }
 
                 dbUrl = "jdbc:postgresql://" + host + ":" + port + path;
+                StringBuilder params = new StringBuilder();
+                if (host.contains("supabase.com") || host.contains("pooler") || host.contains("aws")) {
+                    params.append("sslmode=require&prepareThreshold=0");
+                }
                 if (uri.getQuery() != null) {
-                    dbUrl += "?" + uri.getQuery();
+                    for (String q : uri.getQuery().split("&")) {
+                        if (!q.startsWith("pgbouncer=")) {
+                            if (params.length() > 0) params.append("&");
+                            params.append(q);
+                        }
+                    }
+                }
+                if (params.length() > 0) {
+                    dbUrl += "?" + params.toString();
                 }
             } catch (Exception ignored) {
                 // Fallback to standard url handling

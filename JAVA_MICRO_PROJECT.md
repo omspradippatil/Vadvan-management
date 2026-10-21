@@ -155,43 +155,30 @@ During testing, we discovered and fortified critical logic checks inside the Jav
 
 ### 7. How to Run the Java Backend Locally
 
-#### Prerequisites:
-* **Java 21 or higher** (OpenJDK)
-* **Maven 3.9+**
-* PostgreSQL database (Local or Cloud Supabase)
+#### Automated Zero-Config Setup
+`VadhvanApplication` includes an automatic `.env` loader that discovers your existing database connection string (`DATABASE_URL`) from `backend/.env` or `.env`. You do **not** need to manually export variables!
 
-#### Step 1: Configure Environment Variables
-You can copy `.env.example` in `backend-java/`:
+#### Terminal 1: Run the Spring Boot Java Backend
 ```bash
 cd backend-java
-# Either set environment variables in your terminal:
-export DATABASE_URL="jdbc:postgresql://localhost:5432/vadhvan_port"
-export DB_USERNAME="postgres"
-export DB_PASSWORD="your_password"
-export JWT_SECRET="vadhvan-secure-port-fleet-management-jwt-secret-key-32chars"
-```
-
-#### Step 2: Build and Package the Application
-```bash
-# Inside backend-java directory:
 mvn clean package -DskipTests
-```
-This generates a runnable, self-contained Spring Boot JAR file in `target/vadhvan-port-backend-1.0.0.jar`.
-
-#### Step 3: Run the Spring Boot Server
-```bash
 java -jar target/vadhvan-port-backend-1.0.0.jar
 ```
-* The embedded Tomcat web server will start listening on port `5000` (`http://localhost:5000`).
-* All REST endpoints (`/api/vehicles`, `/api/trips`, `/api/ships`, etc.) will be live.
+*(Or use `mvn spring-boot:run`)*
 
-#### Step 4: Run the React Frontend
-In a separate terminal:
+The Spring Boot embedded Tomcat web server will start up in ~2 seconds on port **5001** (or 5000 based on your `.env` setting).
+
+#### Terminal 2: Run the React Frontend
 ```bash
 cd frontend
 npm run dev
 ```
-The React frontend (running on `http://localhost:5173`) will connect to `http://localhost:5000/api` seamlessly!
+Open [http://localhost:5173](http://localhost:5173) in your browser. The Vite development proxy forwards all `/api/*` requests directly to your running Java backend!
+
+#### Demo Credentials for Testing / Viva:
+* **Email:** `admin@vadhvanport.in`
+* **Password:** `Admin@123`
+*(Returns a cryptographically signed HMAC-SHA256 JWT token and full ADMIN privileges)*
 
 ---
 

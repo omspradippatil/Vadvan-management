@@ -158,9 +158,33 @@ oodu-Hackthon/
 
 ## 🚀 Getting Started
 
+### Option A: Running with Java Spring Boot Backend (`java-backend` branch)
+
+The enterprise Java backend microservice is located in `backend-java/` and built with **Spring Boot 3** & **Java 21/27**. It automatically detects the existing `.env` credentials, starts up in ~2 seconds, and connects seamlessly to PostgreSQL.
+
+```bash
+# 1. Start the Java Spring Boot Backend (Terminal 1)
+cd backend-java
+mvn clean package -DskipTests
+java -jar target/vadhvan-port-backend-1.0.0.jar
+
+# 2. Start the React Frontend (Terminal 2)
+cd frontend
+npm run dev
+```
+
+* **Frontend:** [http://localhost:5173](http://localhost:5173) (automatically proxies `/api` to backend)
+* **Java Backend:** [http://localhost:5001](http://localhost:5001) (or `http://localhost:5000` depending on `PORT` in `.env`)
+* **Live Health Check:** `curl http://localhost:5001/api/port-health`
+* **Comprehensive Viva & Architecture Guide:** See [`JAVA_MICRO_PROJECT.md`](./JAVA_MICRO_PROJECT.md) for full explanations of all 8 design patterns and viva Q&A for exams/practicals!
+
+---
+
+### Option B: Running with Node.js Backend
+
 ### Prerequisites
 - Node.js 20+ 
-- MySQL 5.7+ or PostgreSQL compatible with MySQL mode (e.g. ByteHost sql308.byethost33.com)
+- PostgreSQL or SQLite
 - npm or yarn
 
 ### 1. Clone & Install
