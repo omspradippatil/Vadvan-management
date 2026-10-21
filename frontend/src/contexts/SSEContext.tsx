@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from './AuthContext';
 import { Notification } from '@/types';
 
 interface SSEContextType {
@@ -19,6 +20,7 @@ type SSEEvent = {
 };
 
 export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -38,6 +40,15 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      setIsConnected(false);
+      return;
+    }
+
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
@@ -69,7 +80,7 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       es.close();
       setIsConnected(false);
     };
-  }, [handleEvent, queryClient]);
+  }, [handleEvent, queryClient, isAuthenticated]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev =>

@@ -6,6 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.BufferedReader;
@@ -16,6 +17,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 
 @SpringBootApplication
+@EnableScheduling
 public class VadhvanApplication {
 
     public static void main(String[] args) {

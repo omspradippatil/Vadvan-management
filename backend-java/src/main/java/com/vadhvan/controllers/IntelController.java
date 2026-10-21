@@ -4,6 +4,7 @@ import com.vadhvan.dto.ApiResponse;
 import com.vadhvan.models.*;
 import com.vadhvan.security.UserPrincipal;
 import com.vadhvan.services.IntelService;
+import com.vadhvan.utils.SseManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,25 +22,19 @@ import java.util.Map;
 public class IntelController {
 
     private final IntelService intelService;
+    private final SseManager sseManager;
 
-    public IntelController(IntelService intelService) {
+    public IntelController(IntelService intelService, SseManager sseManager) {
         this.intelService = intelService;
+        this.sseManager = sseManager;
     }
 
     // ========================================================================
     // SSE REAL-TIME EVENTS
     // ========================================================================
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamEvents() {
-        SseEmitter emitter = new SseEmitter(180_000L); // 3 minutes timeout
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("connected")
-                    .data("Connected to Vadhvan Port real-time stream"));
-        } catch (IOException e) {
-            emitter.complete();
-        }
-        return emitter;
+    public SseEmitter streamEvents(@RequestParam(value = "token", required = false) String token) {
+        return sseManager.createEmitter(token);
     }
 
     // ========================================================================

@@ -2,11 +2,13 @@ package com.vadhvan.services;
 
 import com.vadhvan.models.*;
 import com.vadhvan.repositories.*;
+import com.vadhvan.utils.SseManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PortService {
@@ -20,6 +22,7 @@ public class PortService {
     private final FuelLogRepository fuelLogRepository;
     private final ExpenseRepository expenseRepository;
     private final ContainerRepository containerRepository;
+    private final SseManager sseManager;
 
     public PortService(
             ShipRepository shipRepository,
@@ -30,7 +33,8 @@ public class PortService {
             MaintenanceLogRepository maintenanceLogRepository,
             FuelLogRepository fuelLogRepository,
             ExpenseRepository expenseRepository,
-            ContainerRepository containerRepository
+            ContainerRepository containerRepository,
+            SseManager sseManager
     ) {
         this.shipRepository = shipRepository;
         this.dockRepository = dockRepository;
@@ -41,6 +45,7 @@ public class PortService {
         this.fuelLogRepository = fuelLogRepository;
         this.expenseRepository = expenseRepository;
         this.containerRepository = containerRepository;
+        this.sseManager = sseManager;
     }
 
     // ========================================================================
@@ -62,7 +67,10 @@ public class PortService {
         if (shipRepository.existsByImoNumber(ship.getImoNumber())) {
             throw new IllegalArgumentException("Ship with IMO " + ship.getImoNumber() + " already exists");
         }
-        return shipRepository.save(ship);
+        Ship saved = shipRepository.save(ship);
+        sseManager.broadcast("ship_update", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
@@ -79,12 +87,17 @@ public class PortService {
         if (updated.getShipWidth() != null) existing.setShipWidth(updated.getShipWidth());
         if (updated.getDraft() != null) existing.setDraft(updated.getDraft());
         if (updated.getStatus() != null) existing.setStatus(updated.getStatus());
-        return shipRepository.save(existing);
+        Ship saved = shipRepository.save(existing);
+        sseManager.broadcast("ship_update", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
     public void deleteShip(String id) {
         shipRepository.deleteById(id);
+        sseManager.broadcast("ship_update", Map.of("id", id, "deleted", true));
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
     }
 
     @Transactional
@@ -99,11 +112,16 @@ public class PortService {
 
         dock.setStatus("OCCUPIED");
         dock.setAssignedShipId(shipId);
-        dockRepository.save(dock);
+        Dock savedDock = dockRepository.save(dock);
 
         ship.setStatus("DOCKED");
         ship.setDockId(dockId);
-        return shipRepository.save(ship);
+        Ship savedShip = shipRepository.save(ship);
+
+        sseManager.broadcast("ship_update", savedShip);
+        sseManager.broadcast("dock_update", savedDock);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return savedShip;
     }
 
     @Transactional
@@ -113,12 +131,17 @@ public class PortService {
             dockRepository.findById(ship.getDockId()).ifPresent(dock -> {
                 dock.setStatus("AVAILABLE");
                 dock.setAssignedShipId(null);
-                dockRepository.save(dock);
+                Dock savedDock = dockRepository.save(dock);
+                sseManager.broadcast("dock_update", savedDock);
             });
         }
         ship.setStatus("DEPARTED");
         ship.setDockId(null);
-        return shipRepository.save(ship);
+        Ship savedShip = shipRepository.save(ship);
+
+        sseManager.broadcast("ship_update", savedShip);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return savedShip;
     }
 
     // ========================================================================
@@ -140,7 +163,10 @@ public class PortService {
         if (dockRepository.existsByDockNumber(dock.getDockNumber())) {
             throw new IllegalArgumentException("Dock " + dock.getDockNumber() + " already exists");
         }
-        return dockRepository.save(dock);
+        Dock saved = dockRepository.save(dock);
+        sseManager.broadcast("dock_update", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
@@ -152,7 +178,10 @@ public class PortService {
         if (updated.getContainerCount() != null) existing.setContainerCount(updated.getContainerCount());
         if (updated.getEstimatedCompletion() != null) existing.setEstimatedCompletion(updated.getEstimatedCompletion());
         if (updated.getWarehouseId() != null) existing.setWarehouseId(updated.getWarehouseId());
-        return dockRepository.save(existing);
+        Dock saved = dockRepository.save(existing);
+        sseManager.broadcast("dock_update", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
@@ -311,7 +340,10 @@ public class PortService {
 
     @Transactional
     public MaintenanceLog createMaintenanceLog(MaintenanceLog log) {
-        return maintenanceLogRepository.save(log);
+        MaintenanceLog saved = maintenanceLogRepository.save(log);
+        sseManager.broadcast("maintenance_alert", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
@@ -324,14 +356,20 @@ public class PortService {
         if (updated.getStatus() != null) existing.setStatus(updated.getStatus());
         if (updated.getScheduledAt() != null) existing.setScheduledAt(updated.getScheduledAt());
         if (updated.getCompletedAt() != null) existing.setCompletedAt(updated.getCompletedAt());
-        return maintenanceLogRepository.save(existing);
+        MaintenanceLog saved = maintenanceLogRepository.save(existing);
+        sseManager.broadcast("maintenance_alert", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
     public MaintenanceLog openMaintenanceLog(String id) {
         MaintenanceLog log = getMaintenanceLogById(id);
         log.setStatus("OPEN");
-        return maintenanceLogRepository.save(log);
+        MaintenanceLog saved = maintenanceLogRepository.save(log);
+        sseManager.broadcast("maintenance_alert", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
@@ -339,7 +377,10 @@ public class PortService {
         MaintenanceLog log = getMaintenanceLogById(id);
         log.setStatus("COMPLETED");
         log.setCompletedAt(LocalDateTime.now());
-        return maintenanceLogRepository.save(log);
+        MaintenanceLog saved = maintenanceLogRepository.save(log);
+        sseManager.broadcast("maintenance_alert", saved);
+        sseManager.broadcast("dashboard_update", Map.of("trigger", true));
+        return saved;
     }
 
     @Transactional
