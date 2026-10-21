@@ -168,6 +168,29 @@ java -jar target/vadhvan-port-backend-1.0.0.jar
 
 The Spring Boot embedded Tomcat web server will start up in ~2 seconds on port **5001** (or 5000 based on your `.env` setting).
 
+#### 💡 If Port 5001 or 5000 is Already Occupied (Kill Command):
+If an old process or previous server is already using the port, kill it with a single command:
+
+* **macOS / Linux:**
+  ```bash
+  # Check which process is using the port:
+  lsof -i :5001
+
+  # Force kill the process holding port 5001:
+  kill -9 $(lsof -t -i:5001)
+
+  # (Or to kill both 5000 and 5001):
+  kill -9 $(lsof -t -i:5000 -i:5001)
+  ```
+
+* **Windows:**
+  ```cmd
+  # Find PID:
+  netstat -ano | findstr :5001
+  # Kill PID:
+  taskkill /PID <PID_NUMBER> /F
+  ```
+
 #### Terminal 2: Run the React Frontend
 ```bash
 cd frontend

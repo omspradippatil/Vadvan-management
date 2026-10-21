@@ -168,6 +168,9 @@ cd backend-java
 mvn clean package -DskipTests
 java -jar target/vadhvan-port-backend-1.0.0.jar
 
+# 💡 Tip: If port 5001 or 5000 is occupied, kill it using:
+# kill -9 $(lsof -t -i:5001)
+
 # 2. Start the React Frontend (Terminal 2)
 cd frontend
 npm run dev
