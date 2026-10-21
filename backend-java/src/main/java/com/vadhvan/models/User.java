@@ -1,6 +1,7 @@
 package com.vadhvan.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,7 +17,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "\"passwordHash\"", nullable = false)
     private String passwordHash;
 

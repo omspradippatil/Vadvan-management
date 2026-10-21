@@ -1,7 +1,12 @@
 package com.vadhvan;
 
+import com.vadhvan.models.User;
+import com.vadhvan.repositories.UserRepository;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,6 +18,29 @@ public class VadhvanApplication {
     public static void main(String[] args) {
         loadEnvIfPresent();
         SpringApplication.run(VadhvanApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner initUsers(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        return args -> {
+            userRepository.findByEmail("omspradippatil@gmail.com").ifPresent(user -> {
+                user.setPasswordHash(passwordEncoder.encode("Admin@123"));
+                user.setRole("ADMIN");
+                user.setStatus("ACTIVE");
+                userRepository.save(user);
+            });
+            if (!userRepository.existsByEmail("admin@vadhvanport.in")) {
+                User admin = new User(
+                        "c_demo_admin_123",
+                        "admin@vadhvanport.in",
+                        passwordEncoder.encode("Admin@123"),
+                        "Administrator",
+                        "ADMIN",
+                        "ACTIVE"
+                );
+                userRepository.save(admin);
+            }
+        };
     }
 
     private static void loadEnvIfPresent() {

@@ -169,17 +169,26 @@ export const LoginPage: React.FC = () => {
 
           {/* Credentials info */}
           <div className="mt-8 pt-6 border-t border-outline-variant/60">
-            <h4 className="text-xs font-bold text-on-surface mb-2 uppercase tracking-wider">Demo Access Credentials</h4>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant bg-surface-container-low p-3 rounded">
-              <div>
+            <h4 className="text-xs font-bold text-on-surface mb-2 uppercase tracking-wider flex justify-between items-center">
+              <span>Demo Access Credentials</span>
+              <span className="text-[10px] text-port-blue font-normal lowercase">(click to autofill)</span>
+            </h4>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant">
+              <div 
+                onClick={() => { setEmail('admin@vadhvanport.in'); setPassword('Admin@123'); }}
+                className="bg-surface-container-low hover:bg-surface-container p-3 rounded cursor-pointer transition-colors border border-transparent hover:border-port-blue/30"
+              >
                 <p className="font-semibold text-on-surface">Administrator:</p>
-                <p>admin@vadhvanport.in</p>
-                <p>Admin@123</p>
+                <p className="font-mono text-[10px]">admin@vadhvanport.in</p>
+                <p className="font-mono text-[10px] text-port-blue">Admin@123</p>
               </div>
-              <div>
+              <div 
+                onClick={() => { setEmail('fleet@vadhvanport.in'); setPassword('Fleet@123'); }}
+                className="bg-surface-container-low hover:bg-surface-container p-3 rounded cursor-pointer transition-colors border border-transparent hover:border-port-blue/30"
+              >
                 <p className="font-semibold text-on-surface">Fleet Manager:</p>
-                <p>fleet@vadhvanport.in</p>
-                <p>Fleet@123</p>
+                <p className="font-mono text-[10px]">fleet@vadhvanport.in</p>
+                <p className="font-mono text-[10px] text-port-blue">Fleet@123</p>
               </div>
             </div>
           </div>
