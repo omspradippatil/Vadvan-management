@@ -47,3 +47,23 @@ backend/dist/
 .env
 .env.*
 !.env.example
+
+# Java & Maven
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Sensitive application properties
+**/application-local.properties
+**/application-secret.properties
+application-local.properties
+application-secret.properties
+backend-java/.env
+backend-java/.env.*
+!backend-java/.env.example
+
